@@ -34,8 +34,7 @@ typedef enum {
 
 struct SInput {
     bool ignition = true;
-    bool indicator_left = false;
-    bool indicator_right = true;
+    INDICATOR indicator_state = I_OFF;
     uint16_t time_year = 2024;
     uint16_t rpm = 2000;
     uint16_t speed = 50;
@@ -45,6 +44,7 @@ struct SInput {
     bool light_dip = false;
     bool light_fog = false;
     bool handbrake = false;
+    uint8_t instant_consumption = 50; // 0.1 L/100km units (e.g. 150 = 15.0 L/100km)
 };
 
 SInput s_input;
@@ -133,6 +133,14 @@ void canSendLights() {
 void canSendIndicator() {
     const uint32_t ID = 0x1F6;
     uint8_t frame[8] = {0x80, 0xF0, 0, 0, 0, 0, 0, 0};
+
+    switch (s_input.indicator_state) {
+        case I_LEFT:    frame[0] = 0x91; break;
+        case I_RIGHT:   frame[0] = 0xA1; break;
+        case I_HAZZARD: frame[0] = 0xB1; break;
+        case I_OFF:
+        default:        frame[0] = 0x80; break;
+    }
     sendCAN(ID, frame);
 }
 
@@ -229,6 +237,66 @@ void canSendGearSelector() {
     sendCAN(ID, frame);
 }
 
+uint8_t sos_frame_0[8] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_1[8] =  { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_2[8] =  { 0x00, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_3[8] =  { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_4[8] =  { 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_5[8] =  { 0x01, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_6[8] =  { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_7[8] =  { 0x02, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_8[8] =  { 0x02, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_9[8] =  { 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_10[8] = { 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_11[8] = { 0x10, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_12[8] = { 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_13[8] = { 0xA0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_14[8] = { 0xA0, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_15[8] = { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+uint8_t sos_frame_16[8] = { 0xC0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t sos_frame_17[8] = { 0xC0, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+uint8_t sos_frame_18[8] = { 0x01, 0x00, 0x02, 0xFF, 0x00, 0x00, 0x00, 0x00 }; // OEM pattern
+uint8_t sos_frame_19[8] = { 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 }; // OEM pattern
+uint8_t sos_frame_20[8] = { 0x02, 0x01, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00 }; // OEM pattern
+uint8_t sos_frame_21[8] = { 0x01, 0x05, 0x00, 0x10, 0xFF, 0x00, 0x00, 0x00 }; // OEM pattern
+
+void canSendSosSuppress() {
+    uint8_t* frames[] = {
+        sos_frame_0, sos_frame_1, sos_frame_2, sos_frame_3, sos_frame_4,
+        sos_frame_5, sos_frame_6, sos_frame_7, sos_frame_8, sos_frame_9,
+        sos_frame_10, sos_frame_11, sos_frame_12, sos_frame_13, sos_frame_14,
+        sos_frame_15, sos_frame_16, sos_frame_17, sos_frame_18, sos_frame_19,
+        sos_frame_20, sos_frame_21
+    };
+    sendCAN(0x6F1, frames[21]);
+}
+
+void canSendDmeStatus() {
+    const uint32_t ID = 0x12F;
+    uint8_t frame[8] = {0x3F, 0x00, 0x00, 0x00, 0x00, 0x40, 0x01, 0x00};
+    sendCAN(ID, frame);
+}
+
+void canSendInstantConsumption() {
+    const uint32_t ID = 0x316;
+    static uint8_t base = 0;
+
+    // Simulate consumption changes
+    s_input.instant_consumption = (s_input.instant_consumption + 1) % 255;
+
+    // Scale 0.1 L/100km unit to CAN format (value * 4)
+    uint8_t can_value = s_input.instant_consumption * 4;
+
+    uint8_t frame[8] = {
+        0x00,
+        0x30,
+        0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00
+    };
+    sendCAN(ID, frame);
+}
+
 const int MaxQueueSize = 32;
 typedef void (*CanFunction)();
 
@@ -256,13 +324,13 @@ int main() {
                 queuePush(canSendIgnitionState);
                 queuePush(canSendSpeed);
             }
-            if (canCounter % 5 == 0) {
+            if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
                 if (!s_input.bc_pressed) {
                     queuePush(canSendSteeringWheel);
                 }
             }
-            if (canCounter % 20 == 0) {
+            if (canCounter % 20 == 7) {
                 queuePush(canSendLights);
                 queuePush(canSendIndicator);
                 queuePush(canSendAbs);
@@ -270,8 +338,10 @@ int main() {
                 queuePush(canSendAbsCounter);
                 queuePush(canSendAirbagCounter);
                 queuePush(canSendFuel);
+                queuePush(canSendGearSelector);
+                queuePush(canSendInstantConsumption);
             }
-            if (canCounter % 50 == 0) {
+            if (canCounter % 50 == 5) {
                 queuePush(canSendHandbrake);
                 if (s_input.bc_pressed) {
                     s_input.bc_pressed = false;
@@ -279,8 +349,10 @@ int main() {
                     led1 = false;
                 }
             }
-            if (canCounter % 100 == 0) {
+            if (canCounter % 100 == 35) {
                 queuePush(canSendTime);
+                queuePush(canSendSosSuppress);
+                queuePush(canSendDmeStatus);
                 led2 = !led2;
                 s_input.rpm += 500;
                 if (s_input.rpm > 6000)
@@ -288,7 +360,6 @@ int main() {
             }
             if (canCounter % 400 == 0) {
                 queuePush(canSendBCButtonPress);
-                queuePush(canSendGearSelector);
                 s_input.bc_pressed = true;
                 led1 = true;
             }
