@@ -37,10 +37,9 @@ struct SInput {
     INDICATOR indicator_state = I_OFF;
     uint16_t time_year = 2024;
     uint16_t rpm = 2000;
-    uint16_t speed = 50;
+    uint16_t speed = 20;
     uint8_t water_temp = 140;
     uint8_t outside_temp = 20; // °C
-    bool bc_pressed = false;
     bool light_backlight = true;
     bool light_main = true;
     bool light_dip = false;
@@ -229,22 +228,10 @@ void canSendTime() {
 
     uint8_t data[8] = {
         (uint8_t)t->tm_hour, (uint8_t)t->tm_min, (uint8_t)t->tm_sec,
-        (uint8_t)t->tm_mday, 4,
+        (uint8_t)t->tm_mday, (uint8_t)(t->tm_mon + 1),
         (uint8_t)(year & 0xFF), (uint8_t)((year >> 8) & 0xFF), 0xF2
     };
     sendCAN(ID, data);
-}
-
-void canSendBCButtonPress() {
-    const uint32_t ID = 0x0C4;
-    uint8_t frame[8] = {0x83, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xF1, 0x00};
-    sendCAN(ID, frame);
-}
-
-void canSendBCButtonRelease() {
-    const uint32_t ID = 0x0C4;
-    uint8_t frame[8] = {0x83, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xF1, 0x00};
-    sendCAN(ID, frame);
 }
 
 void canSendGearSelector() {
@@ -289,27 +276,34 @@ void canSendOutsideTemp() {
     sendCAN(ID, frame);
 }
 
-void canSendErrorLight() {
-    const uint32_t ID = 0x592;
-    const uint16_t check_engine = 34;
-    const uint16_t overheat = 39;
-    const uint16_t particle = 49;
-    const uint16_t dtc = 184;
-    const uint16_t dtc_deactivated = 36;
-    const uint16_t gear_issue = 348;
-    const uint16_t oil_red = 212;
-    const uint16_t battery_red = 213;
-    const uint16_t sos = 299;
-    const uint16_t fuel = 275;
-    const uint16_t service = 281;
+const uint16_t check_engine = 34;
+const uint16_t overheat = 39;
+const uint16_t particle = 49;
+const uint16_t dtc = 184;
+const uint16_t dtc_deactivated = 36;
+const uint16_t gear_issue = 348;
+const uint16_t oil_red = 212;
+const uint16_t battery_red = 213;
+const uint16_t sos = 299;
+const uint16_t fuel = 275;
+const uint16_t service = 281;
 
-    const uint16_t active = service;
+void canSendErrorLight(uint16_t light_id, bool enable) {
+    const uint32_t ID = 0x592;
 
     const uint8_t on = 0x31;
     const uint8_t off = 0x30;
 
-    uint8_t frame[] = { 0x40, (uint8_t)active, uint8_t(active >> 8), off, 0xFF, 0xFF, 0xFF, 0xFF };
+    uint8_t frame[] = { 0x40, (uint8_t)light_id, uint8_t(light_id >> 8), enable ? on : off, 0xFF, 0xFF, 0xFF, 0xFF };
     sendCAN(ID, frame);
+}
+
+void canSuppressService() {
+    canSendErrorLight(service, false);
+}
+
+void canSuppressSos() {
+    canSendErrorLight(sos, false);
 }
 
 const int MaxQueueSize = 32;
@@ -338,13 +332,10 @@ int main() {
                 queuePush(canSendIgnitionFrame);
                 queuePush(canSendIgnitionState);
                 queuePush(canSendSpeed);
-                queuePush(canSendErrorLight);
             }
             if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
-                if (!s_input.bc_pressed) {
-                    queuePush(canSendSteeringWheel);
-                }
+                queuePush(canSendSteeringWheel);
             }
             if (canCounter % 20 == 7) {
                 queuePush(canSendLights);
@@ -359,11 +350,8 @@ int main() {
             }
             if (canCounter % 50 == 5) {
                 queuePush(canSendHandbrake);
-                if (s_input.bc_pressed) {
-                    s_input.bc_pressed = false;
-                    queuePush(canSendBCButtonRelease);
-                    led1 = false;
-                }
+                queuePush(canSuppressSos);
+                queuePush(canSuppressService);
             }
             if (canCounter % 100 == 35) {
                 queuePush(canSendTime);
@@ -373,11 +361,6 @@ int main() {
                 s_input.rpm += 500;
                 if (s_input.rpm > 6000)
                     s_input.rpm = 1000;
-            }
-            if (canCounter % 400 == 0) {
-                queuePush(canSendBCButtonPress);
-                s_input.bc_pressed = true;
-                led1 = true;
             }
         }
 
