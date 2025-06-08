@@ -330,8 +330,6 @@ void canSendGearboxData() {
     uint8_t byte2 = 0xFF;
 
     // Byte 3 – Counter with high nibble cycling, low nibble fixed
-    // TODO: There seems to be "SPORT" hiding somewhere in the byte3's
-    // lower nibble
     static uint8_t counter_high = 0;
     uint8_t byte3;
 
@@ -339,6 +337,7 @@ void canSendGearboxData() {
         byte3 = (counter_high << 4) | 0x0C; // 0x0C to 0xFC
         counter_high = (counter_high + 1) % 16;
     } else {
+        // 0x0F shows "Sport" on the cluster
         byte3 = (counter_high << 4) | (mode == NORMAL ? 0x0D : 0x07);
         counter_high = (counter_high + 1) % 15;
     }
