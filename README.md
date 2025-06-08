@@ -21,6 +21,7 @@ The code is able to control following things on the cluster
 - Backlight
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
+    - Low fuel warning is automatic based on the level
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
     - Selected gear

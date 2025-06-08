@@ -43,10 +43,11 @@ struct SInput {
     uint8_t time_second = 0;
     uint16_t rpm = 2000;
     uint16_t speed = 20;
-    uint8_t water_temp = 90;
+    uint16_t fuel = 500; // 0 to 1000
+    uint8_t water_temp = 90; // 'C
     bool light_backlight = true;
-    bool light_main = true;
-    bool light_dip = false;
+    bool light_main = false;
+    bool light_dip = true;
     bool light_fog = false;
     bool handbrake = false;
 };
@@ -87,7 +88,7 @@ void canSendIgnitionState() {
 
 void canSendRPM() {
     const uint32_t ID = 0x00AA;
-    uint16_t rpm_val = s_input.rpm * 4;
+    uint16_t rpm_val = min(s_input.rpm, (uint16_t)7500) * 4;
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
                        0x80, 0x99};
@@ -99,7 +100,7 @@ void canSendSpeed() {
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
-    uint16_t speed_mph = (s_input.speed * 621) / 1000;
+    uint16_t speed_mph = (min((int)s_input.speed, 260) * 621) / 1000;
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
@@ -208,7 +209,8 @@ void canSendAirbagCounter() {
 void canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
-    uint16_t level = min(100 + (500 * 8), 8000);
+    // The level is not linear so improve this later
+    uint16_t level = min(8200 * s_input.fuel / 1000, 8200);
     frame[0] = level & 0xFF;
     frame[1] = (level >> 8);
     frame[2] = frame[0];
