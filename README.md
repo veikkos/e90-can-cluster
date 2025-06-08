@@ -2,11 +2,11 @@
 
 __Projects like these are floating all around the internet. This project focuses on documenting things that were hard to come by. Please feel free to contribute!__
 
-This is a work-in-progress BMW e90 CAN bus cluster project to connect a real card instrument cluster to a computer using a microcontroller. Currently I'm using _mbed LPC1768_. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's USART port and the cluster's CAN port.
+This is a work-in-progress BMW e90 CAN bus cluster project to connect a real car instrument cluster to a computer using a microcontroller. Currently I'm using _mbed LPC1768_. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's USART port and the cluster's CAN port.
 
 _The cluster will set "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
 
-The cluster I have is a km/h model from a car with automatic gearbox.
+The cluster I have is a km/h model from a car __with automatic gearbox__.
 
 ![Highlight image](./media/highlight.jpg)
 
