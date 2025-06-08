@@ -2,6 +2,8 @@
 
 This is a work-in-progress BMW e90 CAN bus cluster project to connect it to computer using a microcontroller. Currently _mbed LPC1768_ is used. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's USART port and the cluster's CAN port.
 
+![Highlight image](./media/highlight.jpg)
+
 ## Current capabilities
 
 The code is able to control following things on the cluster
