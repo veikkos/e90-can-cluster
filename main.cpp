@@ -38,14 +38,12 @@ struct SInput {
     uint16_t time_year = 2024;
     uint16_t rpm = 2000;
     uint16_t speed = 20;
-    uint8_t water_temp = 140;
-    uint8_t outside_temp = 20; // °C
+    uint8_t water_temp = 90;
     bool light_backlight = true;
     bool light_main = true;
     bool light_dip = false;
     bool light_fog = false;
     bool handbrake = false;
-    uint8_t instant_consumption = 50; // 0.1 L/100km units (e.g. 150 = 15.0 L/100km)
 };
 
 SInput s_input;
@@ -253,23 +251,6 @@ void canSendDmeStatus() {
     sendCAN(ID, frame);
 }
 
-void canSendInstantConsumption() {
-    const uint32_t ID = 0x316;
-
-    // Clamp and scale
-    uint16_t scaled = s_input.instant_consumption * 4;
-
-    uint8_t frame[8] = {
-        0x00,       // Unknown / flags
-        0x30,       // Type ID for instant consumption
-        (uint8_t)(scaled >> 8),   // High byte
-        (uint8_t)(scaled & 0xFF), // Low byte
-        0x00, 0x00, 0x00, 0x00     // Padding / reserved
-    };
-
-    sendCAN(ID, frame);
-}
-
 void canSendOutsideTemp() {
     const uint32_t ID = 0x366;
     uint8_t frame[] = { 0x78, 0x50, 0x14, 0xFC };
@@ -324,19 +305,23 @@ int main() {
     while (true) {
         uint32_t now = canTimer.elapsed_time().count() / 1000;
 
+        // Main loop is executed every 10 ms
         if (now - lastTime >= 10) {
             lastTime = now;
             canCounter++;
 
+            // Send every 100 ms
             if (canCounter % 10 == 0) {
                 queuePush(canSendIgnitionFrame);
                 queuePush(canSendIgnitionState);
                 queuePush(canSendSpeed);
             }
+            // Send every 50 ms
             if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
                 queuePush(canSendSteeringWheel);
             }
+            // Send every 200 ms
             if (canCounter % 20 == 7) {
                 queuePush(canSendLights);
                 queuePush(canSendIndicator);
@@ -346,13 +331,14 @@ int main() {
                 queuePush(canSendAirbagCounter);
                 queuePush(canSendFuel);
                 queuePush(canSendGearSelector);
-                queuePush(canSendInstantConsumption);
             }
+            // Send every 500 ms
             if (canCounter % 50 == 5) {
                 queuePush(canSendHandbrake);
                 queuePush(canSuppressSos);
                 queuePush(canSuppressService);
             }
+            // Send every 1 s
             if (canCounter % 100 == 35) {
                 queuePush(canSendTime);
                 queuePush(canSendDmeStatus);
@@ -369,6 +355,8 @@ int main() {
             task();
         }
 
+        // Allow 2 ms time for the serial CAN bus to transmit the frame. With 115200 baud
+        // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1 ms isn't
         ThisThread::sleep_for(2ms);
     }
 }
