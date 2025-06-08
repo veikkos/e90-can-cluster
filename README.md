@@ -2,9 +2,11 @@
 
 __Projects like these are floating all around the internet. This project focuses on documenting things that were hard to come by. Please feel free to contribute!__
 
-The cluster will set "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!
+This is a work-in-progress BMW e90 CAN bus cluster project to connect a real card instrument cluster to a computer using a microcontroller. Currently I'm using _mbed LPC1768_. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's USART port and the cluster's CAN port.
 
-This is a work-in-progress BMW e90 CAN bus cluster project to connect a real card instrument cluster to a computer using a microcontroller. Currently _mbed LPC1768_ is used. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's USART port and the cluster's CAN port.
+_The cluster will set "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
+
+The cluster I have is a km/h model from a car with automatic gearbox.
 
 ![Highlight image](./media/highlight.jpg)
 
@@ -20,6 +22,10 @@ The code is able to control following things on the cluster
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
 - Handbrake
+- Gear selection (automatic gearbox cluster!)
+    - Selected gear
+    - Manual mode (M1, M2...)
+    - "Sport" mode
 - Illuminate symbols such as
     -  Check Engine
     -  Battery issue
@@ -27,12 +33,9 @@ The code is able to control following things on the cluster
     -  DTC (stability control) active
     -  DTC disabled
     -  etc.
-- Time (somewhat untested due to warning blocking it)
 
 ### Limitations
 
-- Currrently the cluster is not entirely clear of errors
-    - Clog wheel with exlamation mark is shown
 - Unable to control the fuel consumption needle
     - Apparently this is difficult as the needle cannot be controlled separately but the position is somehow calculated by the cluster
 - There is "Service" notification and "SOS calls not possible" warings
@@ -40,6 +43,8 @@ The code is able to control following things on the cluster
 - There is a warning triangle on the lower screen part
 
 ## Pinout
+
+__Tip:__ There are faint numbers on the cluster port marking the pin numbers. Look closely!
 
 ![Pinout](./external/pinout.jpeg)
 
@@ -65,5 +70,4 @@ The code is able to control following things on the cluster
 
 - There's a Discord community around hacking the clusters with lots of knowledge and information
     - [Arduino-Tacho Gang](https://discord.gg/UQFsS9D6kq)
-- There are faint numbers on the cluster port marking the pin numbers. Look closely!
 - Lights on the cluster (like Check Engine, DTC, Oil Pressure) can be controlled with CAN ID `0x592`. See `canSendErrorLight` and codes in [symbol document](./external/E92%20checkcontrol%20symbols.pdf)

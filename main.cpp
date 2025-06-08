@@ -35,7 +35,12 @@ typedef enum {
 struct SInput {
     bool ignition = true;
     INDICATOR indicator_state = I_OFF;
-    uint16_t time_year = 2024;
+    uint16_t time_year = 2025;
+    uint8_t time_month = 5;
+    uint8_t time_day = 8;
+    uint8_t time_hour = 19;
+    uint8_t time_minute = 6;
+    uint8_t time_second = 0;
     uint16_t rpm = 2000;
     uint16_t speed = 20;
     uint8_t water_temp = 90;
@@ -220,40 +225,22 @@ void canSendHandbrake() {
 
 void canSendTime() {
     const uint32_t ID = 0x39E;
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    uint16_t year = t->tm_year + 1900;
-
     uint8_t data[8] = {
-        (uint8_t)t->tm_hour, (uint8_t)t->tm_min, (uint8_t)t->tm_sec,
-        (uint8_t)t->tm_mday, (uint8_t)(t->tm_mon + 1),
-        (uint8_t)(year & 0xFF), (uint8_t)((year >> 8) & 0xFF), 0xF2
+        s_input.time_hour,
+        s_input.time_minute,
+        s_input.time_second,
+        s_input.time_day,
+        (uint8_t)((s_input.time_month << 4) | 0x0F),
+        (uint8_t)s_input.time_year,
+        (uint8_t)(s_input.time_year >> 8),
+        0xF2
     };
     sendCAN(ID, data);
-}
-
-void canSendGearSelector() {
-    const uint32_t ID = 0x1A0;
-    static uint8_t frame[8] = {0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    static int gear_step = 2;
-    switch (gear_step) {
-        case 0: frame[0] = 0x50; break;
-        case 1: frame[0] = 0x30; break;
-        case 2: frame[0] = 0x20; break;
-        case 3: frame[0] = 0x10; break;
-    }
-    sendCAN(ID, frame);
 }
 
 void canSendDmeStatus() {
     const uint32_t ID = 0x12F;
     uint8_t frame[8] = {0x3F, 0x00, 0x00, 0x00, 0x00, 0x40, 0x01, 0x00};
-    sendCAN(ID, frame);
-}
-
-void canSendOutsideTemp() {
-    const uint32_t ID = 0x366;
-    uint8_t frame[] = { 0x78, 0x50, 0x14, 0xFC };
     sendCAN(ID, frame);
 }
 
@@ -292,7 +279,81 @@ void canSuppressService() {
 }
 
 void canSuppressSos() {
-    canSendErrorLight(SOS_ERROR, false);
+    const uint32_t ID = 0x313;
+    uint8_t frame[8] = { 0x10, 0xFA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    sendCAN(ID, frame);
+}
+
+void canSendGearboxData() {
+    const uint32_t ID = 0x1D2;
+
+    enum Gear {
+        PARK, REVERSE, NEUTRAL, DRIVE
+    };
+
+    enum ManualGear {
+        NONE, M1, M2, M3, M4, M5, M6
+    };
+
+    enum Mode {
+        NORMAL, SPORT
+    };
+
+    Gear currentGear = DRIVE;
+    ManualGear manualGear = NONE;
+    Mode mode = SPORT;
+
+    // Byte 0 – Automatic gear
+    uint8_t byte0 = 0x00;
+    switch (currentGear) {
+        case PARK:    byte0 = 0xE1; break;
+        case REVERSE: byte0 = 0xD2; break;
+        case NEUTRAL: byte0 = 0xB4; break; // This doesn't seem to work yet
+        case DRIVE:   byte0 = 0x78; break;
+    }
+
+    // Byte 1 – Manual gear selection or 0x0F if in automatic
+    uint8_t byte1 = 0x0F;
+    if (manualGear != NONE) {
+        switch (manualGear) {
+            case M1: byte1 = 0x5F; break;
+            case M2: byte1 = 0x6F; break;
+            case M3: byte1 = 0x7F; break;
+            case M4: byte1 = 0x8F; break;
+            case M5: byte1 = 0x9F; break;
+            case M6: byte1 = 0xAF; break;
+            default: byte1 = 0x0F; break;
+        }
+    }
+
+    // Byte 2 – Always 0xFF
+    uint8_t byte2 = 0xFF;
+
+    // Byte 3 – Counter with high nibble cycling, low nibble fixed
+    // TODO: There seems to be "SPORT" hiding somewhere in the byte3's
+    // lower nibble
+    static uint8_t counter_high = 0;
+    uint8_t byte3;
+
+    if (currentGear == PARK || currentGear == REVERSE) {
+        byte3 = (counter_high << 4) | 0x0C; // 0x0C to 0xFC
+        counter_high = (counter_high + 1) % 16;
+    } else {
+        byte3 = (counter_high << 4) | (mode == NORMAL ? 0x0D : 0x07);
+        counter_high = (counter_high + 1) % 15;
+    }
+
+    // Byte 4 – Drive mode (F0 = Drive, F2 = Drive Sport)
+    uint8_t byte4 = manualGear != NONE ? 0xF2 : 0xF0;
+
+    // Byte 5 – Always 0xFF
+    uint8_t byte5 = 0xFF;
+
+    uint8_t frame[8] = {
+        byte0, byte1, byte2, byte3, byte4, byte5, 0xFF, 0xFF
+    };
+
+    sendCAN(ID, frame);
 }
 
 const int MaxQueueSize = 32;
@@ -328,9 +389,11 @@ int main() {
             if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
                 queuePush(canSendSteeringWheel);
+                queuePush(canSendDmeStatus);
             }
             // Send every 200 ms
             if (canCounter % 20 == 7) {
+                queuePush(canSendGearboxData);
                 queuePush(canSendLights);
                 queuePush(canSendIndicator);
                 queuePush(canSendAbs);
@@ -338,7 +401,6 @@ int main() {
                 queuePush(canSendAbsCounter);
                 queuePush(canSendAirbagCounter);
                 queuePush(canSendFuel);
-                queuePush(canSendGearSelector);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
@@ -349,12 +411,7 @@ int main() {
             // Send every 1 s
             if (canCounter % 100 == 35) {
                 queuePush(canSendTime);
-                queuePush(canSendDmeStatus);
-                queuePush(canSendOutsideTemp);
                 led2 = !led2;
-                s_input.rpm += 500;
-                if (s_input.rpm > 6000)
-                    s_input.rpm = 1000;
             }
         }
 
