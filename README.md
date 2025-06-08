@@ -63,5 +63,7 @@ The code is able to control following things on the cluster
 
 ## Notes and findings
 
+- There's a Discord community around hacking the clusters with lots of knowledge and information
+    - [Arduino-Tacho Gang](https://discord.gg/UQFsS9D6kq)
 - There are faint numbers on the cluster port marking the pin numbers. Look closely!
 - Lights on the cluster (like Check Engine, DTC, Oil Pressure) can be controlled with CAN ID `0x592`. See `canSendErrorLight` and codes in [symbol document](./external/E92%20checkcontrol%20symbols.pdf)
