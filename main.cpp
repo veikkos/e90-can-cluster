@@ -257,34 +257,42 @@ void canSendOutsideTemp() {
     sendCAN(ID, frame);
 }
 
-const uint16_t check_engine = 34;
-const uint16_t overheat = 39;
-const uint16_t particle = 49;
-const uint16_t dtc = 184;
-const uint16_t dtc_deactivated = 36;
-const uint16_t gear_issue = 348;
-const uint16_t oil_red = 212;
-const uint16_t battery_red = 213;
-const uint16_t sos = 299;
-const uint16_t fuel = 275;
-const uint16_t service = 281;
+const uint32_t ID_ERROR_LIGHT = 0x592;
 
-void canSendErrorLight(uint16_t light_id, bool enable) {
-    const uint32_t ID = 0x592;
+enum ErrorLightID : uint16_t {
+    CHECK_ENGINE = 34,
+    OVERHEAT = 39,
+    PARTICLE = 49,
+    DTC = 184,
+    DTC_DEACTIVATED = 36,
+    GEAR_ISSUE = 348,
+    OIL_RED = 212,
+    BATTERY_RED = 213,
+    SOS_ERROR = 299,
+    FUEL_WARNING = 275,
+    SERVICE_LIGHT = 281
+};
 
-    const uint8_t on = 0x31;
-    const uint8_t off = 0x30;
+void canSendErrorLight(ErrorLightID light_id, bool enable) {
+    const uint8_t ON = 0x31;
+    const uint8_t OFF = 0x30;
 
-    uint8_t frame[] = { 0x40, (uint8_t)light_id, uint8_t(light_id >> 8), enable ? on : off, 0xFF, 0xFF, 0xFF, 0xFF };
-    sendCAN(ID, frame);
+    uint8_t frame[] = {
+        0x40,
+        static_cast<uint8_t>(light_id & 0xFF),
+        static_cast<uint8_t>((light_id >> 8) & 0xFF),
+        enable ? ON : OFF,
+        0xFF, 0xFF, 0xFF, 0xFF
+    };
+    sendCAN(ID_ERROR_LIGHT, frame);
 }
 
 void canSuppressService() {
-    canSendErrorLight(service, false);
+    canSendErrorLight(SERVICE_LIGHT, false);
 }
 
 void canSuppressSos() {
-    canSendErrorLight(sos, false);
+    canSendErrorLight(SOS_ERROR, false);
 }
 
 const int MaxQueueSize = 32;
