@@ -11,6 +11,7 @@ BufferedSerial pc(USBTX, USBRX, 115200);
 
 Timer canTimer;
 uint32_t lastTime = 0;
+uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
 
 #ifndef M_PI
@@ -41,18 +42,76 @@ struct SInput {
     uint8_t time_hour = 19;
     uint8_t time_minute = 6;
     uint8_t time_second = 0;
-    uint16_t rpm = 2000;
-    uint16_t speed = 20;
-    uint16_t fuel = 500; // 0 to 1000
+    uint16_t rpm = 0;
+    uint16_t speed = 0;
+    uint16_t fuel = 0; // 0 to 1000
     uint8_t water_temp = 90; // 'C
     bool light_backlight = true;
     bool light_main = false;
-    bool light_dip = true;
+    bool light_dip = false;
     bool light_fog = false;
     bool handbrake = false;
 };
 
 SInput s_input;
+
+#define RX_BUF_SIZE 64
+char rx_buf[RX_BUF_SIZE];
+volatile size_t rx_pos = 0;
+volatile bool line_ready = false;
+
+void pollSerial() {
+    while (pc.readable()) {
+        char c;
+        if (pc.read(&c, 1)) {
+            if (c == '\n') {
+                if (rx_pos < RX_BUF_SIZE - 1) {
+                    rx_buf[rx_pos] = '\0';  // null-terminate
+                    line_ready = true;
+                }
+                rx_pos = 0;
+            } else if (rx_pos < RX_BUF_SIZE - 1) {
+                rx_buf[rx_pos++] = c;
+            } else {
+                rx_pos = 0;  // overflow, discard
+            }
+        }
+    }
+}
+
+void parseTelemetryLine()
+{
+    if (!line_ready) return;
+    line_ready = false;
+
+    if (strlen(rx_buf) < 19) {
+        printf("[UART] Ignored short/incomplete line\r\n");
+        return;
+    }
+
+    char buf[6]; // for null-terminating substrings
+
+    // RPM: chars 0–4
+    memcpy(buf, &rx_buf[0], 5); buf[5] = '\0';
+    s_input.rpm = atoi(buf);
+
+    // Speed: chars 5–8 (tenths of km/h)
+    memcpy(buf, &rx_buf[5], 4); buf[4] = '\0';
+    s_input.speed = atoi(buf) / 10;
+
+    // Gear: char 9
+    // s_input.gear = rx_buf[9] - '0';
+
+    // Temp: chars 10–12
+    memcpy(buf, &rx_buf[10], 3); buf[3] = '\0';
+    s_input.water_temp = atoi(buf);
+
+    // Fuel: chars 13–16
+    memcpy(buf, &rx_buf[13], 4); buf[4] = '\0';
+    s_input.fuel = atoi(buf);
+
+    led1 = !led1;
+}
 
 void sendCAN(uint32_t id, const uint8_t* data) {
     uint8_t buf[14] = {
@@ -361,14 +420,16 @@ inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail]
 inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
 int main() {
+
     canTimer.start();
 
     while (true) {
-        uint32_t now = canTimer.elapsed_time().count() / 1000;
+        uint32_t now_us = canTimer.elapsed_time().count();
+        uint32_t now_ms = now_us / 1000;
 
         // Main loop is executed every 10 ms
-        if (now - lastTime >= 10) {
-            lastTime = now;
+        if (now_ms - lastTime >= 10) {
+            lastTime = now_ms;
             canCounter++;
 
             // Send every 100 ms
@@ -407,13 +468,17 @@ int main() {
             }
         }
 
-        CanFunction task = queuePop();
-        if (task) {
-            task();
-        }
-
         // Allow 2 ms time for the serial CAN bus to transmit the frame. With 115200 baud
         // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1 ms isn't
-        ThisThread::sleep_for(2ms);
+        if (now_us - lastTaskTime >= 2000) {
+            lastTaskTime = now_us;
+            CanFunction task = queuePop();
+            if (task) {
+                task();
+            }
+        }
+
+        pollSerial();
+        parseTelemetryLine();
     }
 }
