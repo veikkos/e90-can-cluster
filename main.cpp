@@ -168,18 +168,9 @@ void canSendAbs() {
     // Byte 2 rotation (high nibble cycles, low nibble is always 0x03)
     uint8_t rotate_nibble = (counter % 3) << 4;
     frame[2] = rotate_nibble | 0x03;
-
-    // Braking status
-    if (true) {
-        frame[5] = brake_frame_values[counter % 3];
-        frame[6] = 12 + (counter % 20);  // Fake pressure
-    } else {
-        frame[5] = 0x00;
-        frame[6] = 0x00;
-    }
-
-    frame[7] = counter;  // Varying counter
-    counter++;
+    frame[5] = 0x00;
+    frame[6] = 0x00;
+    frame[7] = counter++;
 
     sendCAN(ID, frame);
 }
