@@ -33,23 +33,46 @@ typedef enum {
     L_DIP = 0b00100000,
 } CAN_LIGHTS;
 
+
+typedef enum {
+    PARK = -1, REVERSE = 0, NEUTRAL = 1, DRIVE = 2
+} GEAR;
+
+typedef enum {
+    NONE = 0, M1, M2, M3, M4, M5, M6
+} GEAR_MANUAL;
+
+typedef enum {
+    NORMAL, SPORT
+} GEAR_MODE;
+
 struct SInput {
     bool ignition = true;
     INDICATOR indicator_state = I_OFF;
-    uint16_t time_year = 2025;
-    uint8_t time_month = 5;
-    uint8_t time_day = 8;
-    uint8_t time_hour = 19;
-    uint8_t time_minute = 6;
+
+    uint16_t time_year = 2000;
+    uint8_t time_month = 1;
+    uint8_t time_day = 1;
+    uint8_t time_hour = 1;
+    uint8_t time_minute = 0;
     uint8_t time_second = 0;
+
     uint16_t rpm = 0;
     uint16_t speed = 0;
-    uint16_t fuel = 0; // 0 to 1000
-    uint8_t water_temp = 90; // 'C
-    bool light_backlight = true;
+    GEAR currentGear = DRIVE;
+    GEAR_MANUAL manualGear = NONE;
+    GEAR_MODE mode = SPORT;
+    uint16_t fuel = 0;
+    uint8_t water_temp = 0;
+
+    bool light_shift = false;
     bool light_main = false;
-    bool light_dip = false;
-    bool light_fog = false;
+    bool light_backlight = true;
+    bool light_tc = false;
+    bool oil_warn = false;
+    bool battery_warn = false;
+    bool abs_warn = false;
+
     bool handbrake = false;
 };
 
@@ -84,31 +107,80 @@ void parseTelemetryLine()
     if (!line_ready) return;
     line_ready = false;
 
-    if (strlen(rx_buf) < 19) {
+    if (strlen(rx_buf) < 40) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
 
-    char buf[6]; // for null-terminating substrings
+    char buf[8];
 
-    // RPM: chars 0–4
-    memcpy(buf, &rx_buf[0], 5); buf[5] = '\0';
+    // Timestamp
+    memcpy(buf, &rx_buf[0], 4); buf[4] = '\0';
+    s_input.time_year = atoi(buf);
+    memcpy(buf, &rx_buf[4], 2); buf[2] = '\0';
+    s_input.time_month = atoi(buf);
+    memcpy(buf, &rx_buf[6], 2); buf[2] = '\0';
+    s_input.time_day = atoi(buf);
+    memcpy(buf, &rx_buf[8], 2); buf[2] = '\0';
+    s_input.time_hour = atoi(buf);
+    memcpy(buf, &rx_buf[10], 2); buf[2] = '\0';
+    s_input.time_minute = atoi(buf);
+    memcpy(buf, &rx_buf[12], 2); buf[2] = '\0';
+    s_input.time_second = atoi(buf);
+
+    // RPM: 14–18
+    memcpy(buf, &rx_buf[14], 5); buf[5] = '\0';
     s_input.rpm = atoi(buf);
 
-    // Speed: chars 5–8 (tenths of km/h)
-    memcpy(buf, &rx_buf[5], 4); buf[4] = '\0';
+    // Speed: 19–22
+    memcpy(buf, &rx_buf[19], 4); buf[4] = '\0';
     s_input.speed = atoi(buf) / 10;
 
-    // Gear: char 9
-    // s_input.gear = rx_buf[9] - '0';
+    // Gear: 23
+    memcpy(buf, &rx_buf[23], 1); buf[1] = '\0';
+    uint8_t gear = atoi(buf);
 
-    // Temp: chars 10–12
-    memcpy(buf, &rx_buf[10], 3); buf[3] = '\0';
+    if (gear == NEUTRAL) {
+        s_input.manualGear = NONE;
+        s_input.currentGear = PARK;
+    } else if (gear == REVERSE) {
+        s_input.manualGear = NONE;
+        s_input.currentGear = REVERSE;
+    } else {
+        s_input.manualGear = (GEAR_MANUAL)(gear - 1);
+        s_input.currentGear = DRIVE;
+    }
+
+    // Temp: 24–26
+    memcpy(buf, &rx_buf[24], 3); buf[3] = '\0';
     s_input.water_temp = atoi(buf);
 
-    // Fuel: chars 13–16
-    memcpy(buf, &rx_buf[13], 4); buf[4] = '\0';
+    // Fuel: 27–30
+    memcpy(buf, &rx_buf[27], 4); buf[4] = '\0';
     s_input.fuel = atoi(buf);
+
+    // Dash flags: 31–39 (T/F)
+    s_input.light_shift      = rx_buf[31] == 'T';
+    s_input.light_main       = rx_buf[32] == 'T';
+    s_input.handbrake        = rx_buf[33] == 'T';
+    s_input.light_tc         = rx_buf[34] == 'T';
+
+    bool left_signal  = rx_buf[35] == 'T';
+    bool right_signal = rx_buf[36] == 'T';
+
+    if (left_signal && right_signal) {
+        s_input.indicator_state = I_HAZZARD;
+    } else if (left_signal) {
+        s_input.indicator_state = I_LEFT;
+    } else if (right_signal) {
+        s_input.indicator_state = I_RIGHT;
+    } else {
+        s_input.indicator_state = I_OFF;
+    }
+
+    s_input.oil_warn         = rx_buf[37] == 'T';
+    s_input.battery_warn     = rx_buf[38] == 'T';
+    s_input.abs_warn         = rx_buf[39] == 'T';
 
     led1 = !led1;
 }
@@ -186,9 +258,9 @@ void canSendLights() {
 
     uint16_t lights = 0;
     if (s_input.light_backlight) lights |= L_BACKLIGHT;
-    if (s_input.light_dip)       lights |= L_DIP;
+    //if (s_input.light_dip)       lights |= L_DIP;
     if (s_input.light_main)      lights |= L_MAIN;
-    if (s_input.light_fog)       lights |= L_FOG;
+    //if (s_input.light_fog)       lights |= L_FOG;
 
     frame[0] = lights & 0xFF;
     sendCAN(ID, frame);
@@ -339,25 +411,9 @@ void canSuppressSos() {
 void canSendGearboxData() {
     const uint32_t ID = 0x1D2;
 
-    enum Gear {
-        PARK, REVERSE, NEUTRAL, DRIVE
-    };
-
-    enum ManualGear {
-        NONE, M1, M2, M3, M4, M5, M6
-    };
-
-    enum Mode {
-        NORMAL, SPORT
-    };
-
-    Gear currentGear = DRIVE;
-    ManualGear manualGear = NONE;
-    Mode mode = SPORT;
-
     // Byte 0 – Automatic gear
     uint8_t byte0 = 0x00;
-    switch (currentGear) {
+    switch (s_input.currentGear) {
         case PARK:    byte0 = 0xE1; break;
         case REVERSE: byte0 = 0xD2; break;
         case NEUTRAL: byte0 = 0xB4; break; // This doesn't seem to work yet
@@ -366,8 +422,8 @@ void canSendGearboxData() {
 
     // Byte 1 – Manual gear selection or 0x0F if in automatic
     uint8_t byte1 = 0x0F;
-    if (manualGear != NONE) {
-        switch (manualGear) {
+    if (s_input.manualGear != NONE) {
+        switch (s_input.manualGear) {
             case M1: byte1 = 0x5F; break;
             case M2: byte1 = 0x6F; break;
             case M3: byte1 = 0x7F; break;
@@ -385,17 +441,17 @@ void canSendGearboxData() {
     static uint8_t counter_high = 0;
     uint8_t byte3;
 
-    if (currentGear == PARK || currentGear == REVERSE) {
+    if (s_input.currentGear == PARK || s_input.currentGear == REVERSE) {
         byte3 = (counter_high << 4) | 0x0C; // 0x0C to 0xFC
         counter_high = (counter_high + 1) % 16;
     } else {
         // 0x0F shows "Sport" on the cluster
-        byte3 = (counter_high << 4) | (mode == NORMAL ? 0x0D : 0x07);
+        byte3 = (counter_high << 4) | (s_input.mode == NORMAL ? 0x0D : 0x07);
         counter_high = (counter_high + 1) % 15;
     }
 
     // Byte 4 – Drive mode (F0 = Drive, F2 = Drive Sport)
-    uint8_t byte4 = manualGear != NONE ? 0xF2 : 0xF0;
+    uint8_t byte4 = s_input.manualGear != NONE ? 0xF2 : 0xF0;
 
     // Byte 5 – Always 0xFF
     uint8_t byte5 = 0xFF;
@@ -405,6 +461,15 @@ void canSendGearboxData() {
     };
 
     sendCAN(ID, frame);
+}
+
+void canSendTcSymbol() {
+    static bool last_tc = false;
+
+    if (s_input.light_tc != last_tc) {
+        last_tc = s_input.light_tc;
+        canSendErrorLight(DTC, s_input.light_tc);
+    }
 }
 
 const int MaxQueueSize = 32;
@@ -443,6 +508,7 @@ int main() {
                 queuePush(canSendRPM);
                 queuePush(canSendSteeringWheel);
                 queuePush(canSendDmeStatus);
+                queuePush(canSendTcSymbol);
             }
             // Send every 200 ms
             if (canCounter % 20 == 7) {
