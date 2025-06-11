@@ -24,7 +24,7 @@ The code is able to control following things on the cluster
     - Low fuel warning is automatic based on the level
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
-    - Selected gear
+    - Current selection (P, R, N, D)
     - Manual mode (M1, M2...)
     - "Sport" mode
 - Illuminate symbols such as
@@ -34,6 +34,7 @@ The code is able to control following things on the cluster
     -  DTC (stability control) active
     -  DTC disabled
     -  etc.
+- Time
 
 ### Limitations
 
@@ -53,8 +54,8 @@ __Tip:__ There are faint numbers on the cluster port marking the pin numbers. Lo
 
 ### Other inputs
 
-- Unverified tip: Outside temperature is coming from external sensor between pins 4 and 5. A resistor of 10k Ohm could be tested
-- Unverified tip: BC button (Enter, Up, Down) can be controlled by connecting 3 buttons to pin 16. Resistor values should be 1k, 2k, 3k Ohm
+- Outside temperature is coming from external sensor between pins 4 and 5. A resistor of 10k Ohm can be used to have approximately 10'C which removes the cold weather warning
+- BC buttons (Enter, Up, Down) can be controlled by connecting 3 buttons to pin 16. Resistor values should be 1k, 2k, 3k Ohm to ground
 
 ## Serial CAN bus adapter settings
 
