@@ -143,7 +143,7 @@ void parseTelemetryLine()
 
     if (gear == NEUTRAL) {
         s_input.manualGear = NONE;
-        s_input.currentGear = PARK;
+        s_input.currentGear = NEUTRAL;
     } else if (gear == REVERSE) {
         s_input.manualGear = NONE;
         s_input.currentGear = REVERSE;
