@@ -50,10 +50,10 @@ struct SInput {
     bool ignition = true;
     INDICATOR indicator_state = I_OFF;
 
-    uint16_t time_year = 2000;
+    uint16_t time_year = 2010;
     uint8_t time_month = 1;
     uint8_t time_day = 1;
-    uint8_t time_hour = 1;
+    uint8_t time_hour = 12;
     uint8_t time_minute = 0;
     uint8_t time_second = 0;
 
@@ -486,7 +486,7 @@ void canSendTcSymbol() {
     static bool last_tc = false;
     static uint8_t counter = 0;
 
-    if (s_input.light_tc != last_tc || (counter++ % 100 == 0)) {
+    if (s_input.light_tc != last_tc || (++counter % 100 == 0)) {
         last_tc = s_input.light_tc;
         counter = 0;
         canSendErrorLight(DTC, s_input.light_tc);
@@ -498,7 +498,7 @@ void canSendOverheatSymbol() {
     static uint8_t counter = 0;
     const bool now_state = s_input.water_temp >= 120;
 
-    if (now_state != last_state || (counter++ % 20 == 0)) {
+    if (now_state != last_state || (++counter % 10 == 0)) {
         last_state = now_state;
         counter = 0;
         canSendErrorLight(OVERHEAT, now_state);
