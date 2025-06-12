@@ -505,6 +505,16 @@ void canSendOverheatSymbol() {
     }
 }
 
+void canSendOilLevel() {
+    const uint32_t ID = 0x381;
+    // 0x19 = "+1l"
+    const uint8_t level = 0x19;
+    // 0x0 in progress, 0x2 done
+    const uint8_t status = 0x2;
+    static uint8_t frame[8] = {level, 0xF0 | status, 0xFF, 0, 0, 0, 0, 0};
+    sendCAN(ID, frame);
+}
+
 const int MaxQueueSize = 32;
 typedef void (*CanFunction)();
 
@@ -565,6 +575,10 @@ int main() {
             if (canCounter % 100 == 35) {
                 queuePush(canSendTime);
                 led2 = !led2;
+            }
+            // Send every 10 s
+            if (canCounter % 1000 == 47) {
+                queuePush(canSendOilLevel);
             }
         }
 
