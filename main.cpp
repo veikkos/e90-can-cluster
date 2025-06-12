@@ -59,7 +59,7 @@ struct SInput {
 
     uint16_t rpm = 0;
     uint16_t speed = 0;
-    GEAR currentGear = DRIVE;
+    GEAR currentGear = PARK;
     GEAR_MANUAL manualGear = NONE;
     GEAR_MODE mode = SPORT;
     uint16_t fuel = 0;
@@ -484,10 +484,24 @@ void canSendGearboxData() {
 
 void canSendTcSymbol() {
     static bool last_tc = false;
+    static uint8_t counter = 0;
 
-    if (s_input.light_tc != last_tc) {
+    if (s_input.light_tc != last_tc || (counter++ % 100 == 0)) {
         last_tc = s_input.light_tc;
+        counter = 0;
         canSendErrorLight(DTC, s_input.light_tc);
+    }
+}
+
+void canSendOverheatSymbol() {
+    static bool last_state = false;
+    static uint8_t counter = 0;
+    const bool now_state = s_input.water_temp >= 120;
+
+    if (now_state != last_state || (counter++ % 20 == 0)) {
+        last_state = now_state;
+        counter = 0;
+        canSendErrorLight(OVERHEAT, now_state);
     }
 }
 
@@ -545,6 +559,7 @@ int main() {
                 queuePush(canSendHandbrake);
                 queuePush(canSuppressSos);
                 queuePush(canSuppressService);
+                queuePush(canSendOverheatSymbol);
             }
             // Send every 1 s
             if (canCounter % 100 == 35) {
