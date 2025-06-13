@@ -108,7 +108,7 @@ void parseTelemetryLine()
     if (!line_ready) return;
     line_ready = false;
 
-    if (strlen(rx_buf) < 45) {
+    if (strlen(rx_buf) < 44) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -183,8 +183,8 @@ void parseTelemetryLine()
     s_input.battery_warn     = rx_buf[38] == 'T';
     s_input.abs_warn         = rx_buf[39] == 'T';
 
-    // Fuel injection amount: 40-44
-    memcpy(buf, &rx_buf[40], 5); buf[5] = '\0';
+    // Fuel injection amount: 40-43
+    memcpy(buf, &rx_buf[40], 4); buf[4] = '\0';
     s_input.fuel_injection = atoi(buf);
 
     led1 = !led1;
@@ -315,6 +315,7 @@ void canSendEngineTempAndFuelInjection() {
     const uint32_t ID = 0x1D0;
     static uint8_t frame[8] = {0x8B, 0xFF, 0x00, 0xCD, 0x00, 0x00, 0xCD, 0xA8};
     const uint8_t engine_run_state = 0x2;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
+    static uint16_t fuel_injection_total = 0;
 
     frame[0] = s_input.water_temp + 48;
 
@@ -326,9 +327,11 @@ void canSendEngineTempAndFuelInjection() {
     frame[2] = alive_counter;
     frame[2] |= (engine_run_state & 0x03) << 4; // bits 4–5
 
-    // Value is cumulative fuel injected in uL per cycle
-    frame[4] = s_input.fuel_injection & 0xFF;
-    frame[5] = (s_input.fuel_injection >> 8) & 0xFF;
+    // Value is cumulative fuel injected in 100 ms cycles
+    fuel_injection_total += s_input.fuel_injection;
+
+    frame[4] = fuel_injection_total & 0xFF;
+    frame[5] = (fuel_injection_total >> 8) & 0xFF;
 
     sendCAN(ID, frame);
 }
