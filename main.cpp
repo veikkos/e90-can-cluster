@@ -236,7 +236,8 @@ void canSendSpeed() {
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
-    uint16_t speed_mph = (min((int)s_input.speed, 260) * 621) / 1000;
+    const int calibration = 30; // This value is empirically set so the speed matches on this particular cluster
+    uint16_t speed_mph = (min((int)s_input.speed, 260) * (620 + calibration)) / 1000;
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
