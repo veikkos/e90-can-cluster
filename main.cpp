@@ -394,6 +394,7 @@ void canSendDmeStatus() {
 const uint32_t ID_ERROR_LIGHT = 0x592;
 
 enum ErrorLightID : uint16_t {
+    YELLOW_WARNING = 24,
     CHECK_ENGINE = 34,
     OVERHEAT = 39,
     PARTICLE = 49,
