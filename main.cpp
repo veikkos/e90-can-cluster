@@ -119,7 +119,7 @@ struct SInput {
     GEAR currentGear = PARK;
     GEAR_MANUAL manualGear = NONE;
     GEAR_MODE mode = SPORT;
-    uint16_t fuel = 750;
+    uint16_t fuel = 1000;
     uint16_t fuel_injection = 0;
     uint8_t water_temp = 0;
     uint16_t custom_light = 0;
@@ -170,37 +170,42 @@ void parseTelemetryLine()
     if (!line_ready) return;
     line_ready = false;
 
-    if (strlen(rx_buf) < 51) {
+    if (rx_buf[0] != 'S') {
+        printf("[UART] Ignored line without 'S' start\r\n");
+        return;
+    }
+
+    if (strlen(rx_buf) < 52) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
 
     char buf[8];
 
-    // Timestamp
-    memcpy(buf, &rx_buf[0], 4); buf[4] = '\0';
+    // Timestamp (1–13)
+    memcpy(buf, &rx_buf[1], 4); buf[4] = '\0';
     s_input.time_year = atoi(buf);
-    memcpy(buf, &rx_buf[4], 2); buf[2] = '\0';
+    memcpy(buf, &rx_buf[5], 2); buf[2] = '\0';
     s_input.time_month = atoi(buf);
-    memcpy(buf, &rx_buf[6], 2); buf[2] = '\0';
+    memcpy(buf, &rx_buf[7], 2); buf[2] = '\0';
     s_input.time_day = atoi(buf);
-    memcpy(buf, &rx_buf[8], 2); buf[2] = '\0';
+    memcpy(buf, &rx_buf[9], 2); buf[2] = '\0';
     s_input.time_hour = atoi(buf);
-    memcpy(buf, &rx_buf[10], 2); buf[2] = '\0';
+    memcpy(buf, &rx_buf[11], 2); buf[2] = '\0';
     s_input.time_minute = atoi(buf);
-    memcpy(buf, &rx_buf[12], 2); buf[2] = '\0';
+    memcpy(buf, &rx_buf[13], 2); buf[2] = '\0';
     s_input.time_second = atoi(buf);
 
-    // RPM: 14–18
-    memcpy(buf, &rx_buf[14], 5); buf[5] = '\0';
+    // RPM: 15–19
+    memcpy(buf, &rx_buf[15], 5); buf[5] = '\0';
     s_input.rpm = atoi(buf);
 
-    // Speed: 19–22
-    memcpy(buf, &rx_buf[19], 4); buf[4] = '\0';
+    // Speed: 20–23
+    memcpy(buf, &rx_buf[20], 4); buf[4] = '\0';
     s_input.speed = atoi(buf) / 10;
 
-    // Gear: 23
-    memcpy(buf, &rx_buf[23], 1); buf[1] = '\0';
+    // Gear: 24
+    memcpy(buf, &rx_buf[24], 1); buf[1] = '\0';
     uint8_t gear = atoi(buf);
 
     if (gear == NEUTRAL) {
@@ -214,22 +219,22 @@ void parseTelemetryLine()
         s_input.currentGear = DRIVE;
     }
 
-    // Temp: 24–26
-    memcpy(buf, &rx_buf[24], 3); buf[3] = '\0';
+    // Temp: 25–27
+    memcpy(buf, &rx_buf[25], 3); buf[3] = '\0';
     s_input.water_temp = atoi(buf);
 
-    // Fuel: 27–30
-    memcpy(buf, &rx_buf[27], 4); buf[4] = '\0';
+    // Fuel: 28–31
+    memcpy(buf, &rx_buf[28], 4); buf[4] = '\0';
     s_input.fuel = atoi(buf);
 
-    // Dash flags: 31–39 (T/F)
-    s_input.light_shift      = rx_buf[31] == 'T';
-    s_input.light_main       = rx_buf[32] == 'T';
-    s_input.handbrake        = rx_buf[33] == 'T';
-    s_input.light_tc         = rx_buf[34] == 'T';
+    // Dash flags: 32–40 (T/F)
+    s_input.light_shift      = rx_buf[32] == 'T';
+    s_input.light_main       = rx_buf[33] == 'T';
+    s_input.handbrake        = rx_buf[34] == 'T';
+    s_input.light_tc         = rx_buf[35] == 'T';
 
-    bool left_signal  = rx_buf[35] == 'T';
-    bool right_signal = rx_buf[36] == 'T';
+    bool left_signal  = rx_buf[36] == 'T';
+    bool right_signal = rx_buf[37] == 'T';
 
     if (left_signal && right_signal) {
         s_input.indicator_state = I_HAZZARD;
@@ -241,21 +246,22 @@ void parseTelemetryLine()
         s_input.indicator_state = I_OFF;
     }
 
-    s_input.oil_warn           = rx_buf[37] == 'T';
-    s_input.battery_warn       = rx_buf[38] == 'T';
-    s_input.abs_warn           = rx_buf[39] == 'T';
-    s_input.engine_temp_yellow = rx_buf[40] == 'T';
-    s_input.engine_temp_red    = rx_buf[41] == 'T';
+    s_input.oil_warn           = rx_buf[38] == 'T';
+    s_input.battery_warn       = rx_buf[39] == 'T';
+    s_input.abs_warn           = rx_buf[40] == 'T';
+    s_input.engine_temp_yellow = rx_buf[41] == 'T';
+    s_input.engine_temp_red    = rx_buf[42] == 'T';
 
-    // Fuel injection amount: 42-45
-    memcpy(buf, &rx_buf[42], 4); buf[4] = '\0';
+    // Fuel injection amount: 43–46
+    memcpy(buf, &rx_buf[43], 4); buf[4] = '\0';
     s_input.fuel_injection = atoi(buf);
 
-    // Custom light: 46-49
-    memcpy(buf, &rx_buf[46], 4); buf[4] = '\0';
+    // Custom light: 47–50
+    memcpy(buf, &rx_buf[47], 4); buf[4] = '\0';
     s_input.custom_light = atoi(buf);
 
-    s_input.custom_light_on  = rx_buf[50] == 'T';
+    // Custom light on: 51
+    s_input.custom_light_on  = rx_buf[51] == 'T';
 
     led1 = !led1;
 }
@@ -277,21 +283,6 @@ void canSendIgnitionFrame() {
     sendCAN(ID, data);
 }
 
-void canSendIgnitionState() {
-    const uint32_t ID = 0x26E;
-    static uint8_t frame[8] = {0};
-
-    switch (2) {
-        case 0: frame[0] = 0x00; frame[1] = 0x00; frame[2] = 0x3F; break;
-        case 1: frame[0] = 0x00; frame[1] = 0x40; frame[2] = 0x7F; break;
-        case 2: frame[0] = 0x40; frame[1] = 0x40; frame[2] = 0x7F; break;
-    }
-
-    frame[3] = 0x50;
-    for (int i = 4; i < 8; ++i) frame[i] = 0xFF;
-    sendCAN(ID, frame);
-}
-
 void canSendRPM() {
     const uint32_t ID = 0x00AA;
     uint16_t rpm_val = min(s_input.rpm, (uint16_t)7500) * 4;
@@ -307,7 +298,7 @@ void canSendSpeed() {
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
     const int calibration = 30; // This value is empirically set so the speed matches on this particular cluster
-    uint16_t speed_mph = (min((int)s_input.speed, 260) * (620 + calibration)) / 1000;
+    uint16_t speed_mph = (min((int)s_input.speed, 260) * (620 + calibration) + 500) / 1000;
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
@@ -427,7 +418,7 @@ void canSendFuel() {
     static int max_level = 8100;
 
     // The level is not linear so improve this later
-    uint16_t level = 100 + min(max_level * (int)s_input.fuel / 1000, max_level);
+    uint16_t level = 100 + min((max_level * (int)s_input.fuel) / 1000, max_level);
     frame[0] = level & 0xFF;
     frame[1] = (level >> 8);
     // There are two sensors so duplicate the value
@@ -618,7 +609,6 @@ inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail]
 inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
 int main() {
-
     canTimer.start();
 
     while (true) {
@@ -628,18 +618,16 @@ int main() {
         // Main loop is executed every 10 ms
         if (now_ms - lastTime >= 10) {
             lastTime = now_ms;
-            canCounter++;
 
             // Send every 100 ms
             if (canCounter % 10 == 0) {
                 queuePush(canSendIgnitionFrame);
-                queuePush(canSendIgnitionState);
-                queuePush(canSendSpeed);
                 queuePush(canSendEngineTempAndFuelInjection);
             }
             // Send every 50 ms
             if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
+                queuePush(canSendSpeed);
                 queuePush(canSendSteeringWheel);
                 queuePush(canSendDmeStatus);
                 queuePush(canSendTcSymbol);
@@ -672,11 +660,13 @@ int main() {
             if (canCounter % 1000 == 47) {
                 queuePush(canSendOilLevel);
             }
+
+            canCounter++;
         }
 
-        // Allow 2 ms time for the serial CAN bus to transmit the frame. With 115200 baud
-        // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1 ms isn't
-        if (now_us - lastTaskTime >= 2000) {
+        // Allow 2.5 ms time for the serial CAN bus to transmit the frame. With 115200 baud
+        // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
+        if (now_us - lastTaskTime >= 2500) {
             lastTaskTime = now_us;
             CanFunction task = queuePop();
             if (task) {
