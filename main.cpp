@@ -3,49 +3,74 @@
 #include <cstring>
 #include <math.h>
 
+
+// LED indicators
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
 
+// Serial interfaces
 BufferedSerial canSerial(p9, p10, 115200);
 BufferedSerial pc(USBTX, USBRX, 115200);
 
+// Timer
 Timer canTimer;
 uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
 
+// Define M_PI if not present
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-typedef enum {
+// Enums
+enum INDICATOR {
     I_OFF = 0,
-    I_LEFT = 1,
-    I_RIGHT = 2,
-    I_HAZZARD = 3,
-} INDICATOR;
+    I_LEFT,
+    I_RIGHT,
+    I_HAZZARD
+};
 
-typedef enum {
-    L_BRAKE = 0b10000000,
-    L_FOG = 0b01000000,
-    L_BACKLIGHT = 0b00000100,
-    L_MAIN = 0b00000010,
-    L_DIP = 0b00100000,
-} CAN_LIGHTS;
+enum CAN_LIGHTS {
+    L_BRAKE = 0x80,
+    L_FOG = 0x40,
+    L_BACKLIGHT = 0x04,
+    L_MAIN = 0x02,
+    L_DIP = 0x20
+};
 
+enum GEAR {
+    PARK = -1,
+    REVERSE = 0,
+    NEUTRAL = 1,
+    DRIVE = 2
+};
 
-typedef enum {
-    PARK = -1, REVERSE = 0, NEUTRAL = 1, DRIVE = 2
-} GEAR;
-
-typedef enum {
+enum GEAR_MANUAL {
     NONE = 0, M1, M2, M3, M4, M5, M6
-} GEAR_MANUAL;
+};
 
-typedef enum {
-    NORMAL, SPORT
-} GEAR_MODE;
+enum GEAR_MODE {
+    NORMAL,
+    SPORT
+};
 
+enum ErrorLightID : uint16_t {
+    YELLOW_WARNING = 24,
+    CHECK_ENGINE = 34,
+    OVERHEAT = 39,
+    PARTICLE = 49,
+    DTC = 184,
+    DTC_DEACTIVATED = 36,
+    GEAR_ISSUE = 348,
+    OIL_RED = 212,
+    BATTERY_RED = 213,
+    SOS_ERROR = 299,
+    FUEL_WARNING = 275,
+    SERVICE_LIGHT = 281
+};
+
+// Vehicle state structure
 struct SInput {
     bool ignition = true;
     INDICATOR indicator_state = I_OFF;
@@ -79,6 +104,7 @@ struct SInput {
 
 SInput s_input;
 
+// Serial RX buffer
 #define RX_BUF_SIZE 64
 char rx_buf[RX_BUF_SIZE];
 volatile size_t rx_pos = 0;
@@ -391,24 +417,8 @@ void canSendDmeStatus() {
     sendCAN(ID, frame);
 }
 
-const uint32_t ID_ERROR_LIGHT = 0x592;
-
-enum ErrorLightID : uint16_t {
-    YELLOW_WARNING = 24,
-    CHECK_ENGINE = 34,
-    OVERHEAT = 39,
-    PARTICLE = 49,
-    DTC = 184,
-    DTC_DEACTIVATED = 36,
-    GEAR_ISSUE = 348,
-    OIL_RED = 212,
-    BATTERY_RED = 213,
-    SOS_ERROR = 299,
-    FUEL_WARNING = 275,
-    SERVICE_LIGHT = 281
-};
-
 void canSendErrorLight(ErrorLightID light_id, bool enable) {
+    const uint32_t ID = 0x592;
     const uint8_t ON = 0x31;
     const uint8_t OFF = 0x30;
 
@@ -419,7 +429,7 @@ void canSendErrorLight(ErrorLightID light_id, bool enable) {
         enable ? ON : OFF,
         0xFF, 0xFF, 0xFF, 0xFF
     };
-    sendCAN(ID_ERROR_LIGHT, frame);
+    sendCAN(ID, frame);
 }
 
 void canSuppressService() {
@@ -523,9 +533,9 @@ void canSendOilLevel() {
     sendCAN(ID, frame);
 }
 
+// CAN queue
 const int MaxQueueSize = 32;
 typedef void (*CanFunction)();
-
 CanFunction canQueue[MaxQueueSize];
 int queueHead = 0;
 int queueTail = 0;
