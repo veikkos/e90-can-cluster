@@ -512,11 +512,14 @@ void canSendOverheatSymbol() {
 
 void canSendOilLevel() {
     const uint32_t ID = 0x381;
-    // 0x19 = "+1l"
-    const uint8_t level = 0x19;
-    // 0x0 in progress, 0x2 done
-    const uint8_t status = 0x2;
-    static uint8_t frame[8] = {level, 0xF0 | status, 0xFF, 0, 0, 0, 0, 0};
+    // min: 0x19
+    // middle: 0x35
+    const uint8_t level = 0x35;
+    // >MAX: e.g. 0xF1
+    // OK: 0xF0
+    // +1l: 0xF2
+    const uint8_t status = 0xF0;
+    static uint8_t frame[8] = {level, status, 0xFF, 0, 0, 0, 0, 0};
     sendCAN(ID, frame);
 }
 
