@@ -288,13 +288,13 @@ void canSendLights() {
     const uint32_t ID = 0x21A;
     static uint8_t frame[8] = {0x00, 0x00, 0xF7, 0, 0, 0, 0, 0};
 
-    uint16_t lights = 0;
+    uint8_t lights = 0;
     if (s_input.light_backlight) lights |= L_BACKLIGHT;
-    //if (s_input.light_dip)       lights |= L_DIP;
+    if (false)                   lights |= L_DIP;
     if (s_input.light_main)      lights |= L_MAIN;
-    //if (s_input.light_fog)       lights |= L_FOG;
+    if (false)                   lights |= L_FOG;
 
-    frame[0] = lights & 0xFF;
+    frame[0] = lights;
     sendCAN(ID, frame);
 }
 
@@ -380,10 +380,13 @@ void canSendAirbagCounter() {
 void canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
+    static int max_level = 8100;
+
     // The level is not linear so improve this later
-    uint16_t level = min(8200 * s_input.fuel / 1000, 8200);
+    uint16_t level = 100 + min(max_level * (int)s_input.fuel / 1000, max_level);
     frame[0] = level & 0xFF;
     frame[1] = (level >> 8);
+    // There are two sensors so duplicate the value
     frame[2] = frame[0];
     frame[3] = frame[1];
     sendCAN(ID, frame);
