@@ -119,7 +119,7 @@ struct SInput {
     GEAR currentGear = PARK;
     GEAR_MANUAL manualGear = NONE;
     GEAR_MODE mode = SPORT;
-    uint16_t fuel = 0;
+    uint16_t fuel = 750;
     uint16_t fuel_injection = 0;
     uint8_t water_temp = 0;
     uint16_t custom_light = 0;
@@ -606,7 +606,7 @@ void canSendOilLevel() {
 }
 
 // CAN queue
-const int MaxQueueSize = 32;
+const int MaxQueueSize = 64;
 typedef void (*CanFunction)();
 CanFunction canQueue[MaxQueueSize];
 int queueHead = 0;
