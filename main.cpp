@@ -60,29 +60,46 @@ enum ErrorLightID : uint16_t {
     FIX_CAR = 21,
     YELLOW_WARNING = 24,
     OIL_LEVEL_LOW = 28,
+    CHECK_ENGINE_DOUBLE = 31,
     CHECK_ENGINE = 34,
-    DSC = 36,
+    DTC_TRIANGLE_DOUBLE_EXCLAMATION_MARK = 35,
     YELLOW_TRIANGLE = 37,
-    OVERHEAT = 39,
+    OVERHEAT_RED = 39,
     START_FOOT_BRAKE = 40,
     RED_TRIANGLE = 41,
-    ABS_DSC_WARNING = 42,
+    ABS_DTC_TRIANGLE_WARNING = 42,
     SUSPENSION_WARNING = 43,
-    PARTICLE = 49,
+    PARTICLE_FILTER = 49,
     TIRE_PRESSURE_YELLOW = 50,
     LIMIT_RED = 62,
     TIRE_PRESSURE_RED = 63,
-    STEERNG_WARNING = 73,
+    CRUISE_WARNING = 69, // Also 85
+    STEERING_WARNING = 73,
     LIMIT_YELLOW = 78,
     COLD_WEATHER = 79,
-    DTC = 184,
+    BATTERY_YELLOW = 161,
+    EXCLAMATION_MARK_YELLOW = 169,
+    DTC_DOUBLE_BLINK = 184,
+    LOW_TIRE_PRESSURE_FRONT_LEFT = 139,
+    LOW_TIRE_PRESSURE_REAR_RIGHT = 140,
+    LOW_TIRE_PRESSURE_REAR_LEFT = 141,
+    LOW_TIRE_PRESSURE_FRONT_RIGHT = 143,
+    LOW_TIRE_PRESSURE_ALL = 147,
     DTC_DEACTIVATED = 36,
+    DTC_TRIANGLE_SYMBOL_ONLY = 215,
+    FOOT_TO_BRAKE = 244,
     GEAR_ISSUE = 348,
     OIL_RED = 212,
     BATTERY_RED = 213,
     SOS_ERROR = 299,
+    OVERHEAT_YELLOW = 257,
     FUEL_WARNING = 275,
-    SERVICE_LIGHT = 281
+    SERVICE_LIGHT = 281,
+    CAR_AHEAD_YELLOW = 282,
+    CAR_AHEAD_RED = 283,
+    AUTO_GEAR_BOX_YELLOW = 349,
+    DTC_SYMBOL_ONLY = 357
+    // What's there on 400 and beyond...?
 };
 
 // Vehicle state structure
@@ -105,7 +122,9 @@ struct SInput {
     uint16_t fuel = 0;
     uint16_t fuel_injection = 0;
     uint8_t water_temp = 0;
+    uint16_t custom_light = 0;
 
+    bool custom_light_on = false;
     bool light_shift = false;
     bool light_main = false;
     bool light_backlight = true;
@@ -113,6 +132,8 @@ struct SInput {
     bool oil_warn = false;
     bool battery_warn = false;
     bool abs_warn = false;
+    bool engine_temp_yellow = false;
+    bool engine_temp_red = false;
 
     bool handbrake = false;
 };
@@ -149,7 +170,7 @@ void parseTelemetryLine()
     if (!line_ready) return;
     line_ready = false;
 
-    if (strlen(rx_buf) < 44) {
+    if (strlen(rx_buf) < 51) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -220,13 +241,21 @@ void parseTelemetryLine()
         s_input.indicator_state = I_OFF;
     }
 
-    s_input.oil_warn         = rx_buf[37] == 'T';
-    s_input.battery_warn     = rx_buf[38] == 'T';
-    s_input.abs_warn         = rx_buf[39] == 'T';
+    s_input.oil_warn           = rx_buf[37] == 'T';
+    s_input.battery_warn       = rx_buf[38] == 'T';
+    s_input.abs_warn           = rx_buf[39] == 'T';
+    s_input.engine_temp_yellow = rx_buf[40] == 'T';
+    s_input.engine_temp_red    = rx_buf[41] == 'T';
 
-    // Fuel injection amount: 40-43
-    memcpy(buf, &rx_buf[40], 4); buf[4] = '\0';
+    // Fuel injection amount: 42-45
+    memcpy(buf, &rx_buf[42], 4); buf[4] = '\0';
     s_input.fuel_injection = atoi(buf);
+
+    // Custom light: 46-49
+    memcpy(buf, &rx_buf[46], 4); buf[4] = '\0';
+    s_input.custom_light = atoi(buf);
+
+    s_input.custom_light_on  = rx_buf[50] == 'T';
 
     led1 = !led1;
 }
@@ -435,7 +464,7 @@ void canSendDmeStatus() {
     sendCAN(ID, frame);
 }
 
-void canSendErrorLight(ErrorLightID light_id, bool enable) {
+void canSendErrorLight(uint16_t light_id, bool enable) {
     const uint32_t ID = 0x592;
     const uint8_t ON = 0x31;
     const uint8_t OFF = 0x30;
@@ -522,19 +551,44 @@ void canSendTcSymbol() {
     if (s_input.light_tc != last_tc || (++counter % 100 == 0)) {
         last_tc = s_input.light_tc;
         counter = 0;
-        canSendErrorLight(DTC, s_input.light_tc);
+        canSendErrorLight(DTC_SYMBOL_ONLY, s_input.light_tc);
     }
 }
 
-void canSendOverheatSymbol() {
-    static bool last_state = false;
+void canSendEngineTempYellowSymbol() {
+    static bool last_value = false;
     static uint8_t counter = 0;
-    const bool now_state = s_input.water_temp >= 120;
+    bool value = s_input.engine_temp_yellow && !s_input.engine_temp_red;
 
-    if (now_state != last_state || (++counter % 10 == 0)) {
-        last_state = now_state;
+    if (value != last_value || (++counter % 10 == 0)) {
+        last_value = value;
         counter = 0;
-        canSendErrorLight(OVERHEAT, now_state);
+        canSendErrorLight(OVERHEAT_YELLOW, last_value);
+    }
+}
+
+void canSendEngineTempRedSymbol() {
+    static bool last_value = false;
+    static uint8_t counter = 0;
+
+    if (s_input.engine_temp_red != last_value || (++counter % 10 == 0)) {
+        last_value = s_input.engine_temp_red;
+        counter = 0;
+        canSendErrorLight(OVERHEAT_RED, last_value);
+    }
+}
+
+void canSendCustomSymbol() {
+    static bool last_state = false;
+    static uint16_t last_number = 0;
+    static uint8_t counter = 0;
+    const bool changed = s_input.custom_light != last_number || last_state != s_input.custom_light_on;
+
+    if (changed || (++counter % 10 == 0)) {
+        last_state = s_input.custom_light_on;
+        last_number = s_input.custom_light;
+        counter = 0;
+        canSendErrorLight(last_number, last_state);
     }
 }
 
@@ -599,13 +653,15 @@ int main() {
                 queuePush(canSendAbsCounter);
                 queuePush(canSendAirbagCounter);
                 queuePush(canSendFuel);
+                queuePush(canSendCustomSymbol);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
                 queuePush(canSendHandbrake);
                 queuePush(canSuppressSos);
                 queuePush(canSuppressService);
-                queuePush(canSendOverheatSymbol);
+                queuePush(canSendEngineTempYellowSymbol);
+                queuePush(canSendEngineTempRedSymbol);
             }
             // Send every 1 s
             if (canCounter % 100 == 35) {
