@@ -16,12 +16,14 @@ The code is able to control following things on the cluster
 
 - Speedometer
     - ODO / trip (automatic based on speed)
+    - This needed to be "calibrated", see the code
 - RPM
 - Indicators
 - Backlight
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
     - Low fuel warning is automatic based on the level
+- Current consumption needle
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
     - Current selection (P, R, N, D)
@@ -34,28 +36,37 @@ The code is able to control following things on the cluster
     -  DTC (stability control) active
     -  DTC disabled
     -  etc.
+- Water temperature
+    - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
+- Oil level 
 - Time
 
 ### Limitations
 
-- Unable to control the fuel consumption needle
-    - Apparently this is difficult as the needle cannot be controlled separately but the position is somehow calculated by the cluster
-- There is "Service" notification and "SOS calls not possible" warnings
+- There is a "Service" notification and "SOS calls not possible" warnings
     - Code tries to at least suppress those
 - There is a warning triangle on the lower screen part
 
 ## Pinout
 
+```
+               +----------+
+               |  1 | 10  |
+               |  2 | 11  |
+               |  3 | 12  |
+ Temperature E |  4 | 13  |
+ Temperature M |  5 | 14  |
+         CAN H |  6 | 15  |
+         CAN L |  7 | 16  | BC buttons
+               |  8 | 17  |
+           12V |  9 | 18  | GND
+               +----------+
+```
+
 __Tip:__ There are faint numbers on the cluster port marking the pin numbers. Look closely!
 
-![Pinout](./external/pinout.jpeg)
-
-[(Source)](https://forum.arduino.cc/t/controlling-bmw-e90-instrument-cluster/670728)
-
-### Other inputs
-
-- Outside temperature is coming from external sensor between pins 4 and 5. A resistor of 10k Ohm can be used to have approximately 10'C which removes the cold weather warning
-- BC buttons (Enter, Up, Down) can be controlled by connecting 3 buttons to pin 16. Resistor values should be 1k, 2k, 3k Ohm to ground
+- __Temperature__: Outside temperature with an external sensor of resistive type. A resistor of 10k Ohm can be used to have approximately 10'C which removes the cold weather warning
+- __BC buttons (Enter, Up, Down)__: Can be controlled by connecting 3 buttons to ground via resistors. The resistor values should be 1k (Enter), 2k (Up), 3k (Down) Ohm to ground
 
 ## Serial CAN bus adapter settings
 
@@ -67,7 +78,7 @@ __Tip:__ There are faint numbers on the cluster port marking the pin numbers. Lo
     - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
     - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
 - There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
-- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 2 ms between frames. See the main loop how this can be achieved__
+- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 2 ms between sending frames. See the main loop how this can be achieved without blocking__
 
 ## Notes and findings
 
