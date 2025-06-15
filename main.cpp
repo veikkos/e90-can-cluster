@@ -175,7 +175,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 52) {
+    if (strlen(rx_buf) < 53) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -207,17 +207,6 @@ void parseTelemetryLine()
     // Gear: 24
     memcpy(buf, &rx_buf[24], 1); buf[1] = '\0';
     uint8_t gear = atoi(buf);
-
-    if (gear == NEUTRAL) {
-        s_input.manualGear = NONE;
-        s_input.currentGear = NEUTRAL;
-    } else if (gear == REVERSE) {
-        s_input.manualGear = NONE;
-        s_input.currentGear = REVERSE;
-    } else {
-        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, 6));
-        s_input.currentGear = DRIVE;
-    }
 
     // Temp: 25–27
     memcpy(buf, &rx_buf[25], 3); buf[3] = '\0';
@@ -262,6 +251,32 @@ void parseTelemetryLine()
 
     // Custom light on: 51
     s_input.custom_light_on  = rx_buf[51] == 'T';
+
+    // Gear mode: 52
+    uint8_t gearMode = rx_buf[52];
+
+    // Set gear variables
+    if (gear == NEUTRAL) {
+        s_input.manualGear = NONE;
+        s_input.currentGear = NEUTRAL;
+        s_input.mode = NORMAL;
+    } else if (gear == REVERSE) {
+        s_input.manualGear = NONE;
+        s_input.currentGear = REVERSE;
+        s_input.mode = NORMAL;
+    } else if (gear == PARK) {
+        s_input.manualGear = NONE;
+        s_input.currentGear = PARK;
+        s_input.mode = NORMAL;
+    } else if (gearMode == 'A') {
+        s_input.manualGear = NONE;
+        s_input.currentGear = DRIVE;
+        s_input.mode = NORMAL;
+    } else {
+        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, 6));
+        s_input.currentGear = DRIVE;
+        s_input.mode = gearMode == 'S' ? SPORT : NORMAL;
+    }
 
     led1 = !led1;
 }
@@ -488,7 +503,7 @@ void canSendGearboxData() {
     switch (s_input.currentGear) {
         case PARK:    byte0 = 0xE1; break;
         case REVERSE: byte0 = 0xD2; break;
-        case NEUTRAL: byte0 = 0xB4; break; // This doesn't seem to work yet
+        case NEUTRAL: byte0 = 0xB4; break;
         case DRIVE:   byte0 = 0x78; break;
     }
 
