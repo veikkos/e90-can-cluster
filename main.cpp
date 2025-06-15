@@ -86,7 +86,7 @@ enum ErrorLightID : uint16_t {
     LOW_TIRE_PRESSURE_FRONT_RIGHT = 143,
     LOW_TIRE_PRESSURE_ALL = 147,
     DTC_DEACTIVATED = 36,
-    DTC_TRIANGLE_SYMBOL_ONLY = 215,
+    DSC_TRIANGLE_SYMBOL_ONLY = 215,
     FOOT_TO_BRAKE = 244,
     GEAR_ISSUE = 348,
     OIL_RED = 212,
@@ -129,6 +129,7 @@ struct SInput {
     bool light_highbeam = false;
     bool light_lowbeam = true;
     bool light_tc = false;
+    bool light_esc = false;
     bool oil_warn = false;
     bool battery_warn = false;
     bool abs_warn = false;
@@ -175,7 +176,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 54) {
+    if (strlen(rx_buf) < 55) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -278,7 +279,8 @@ void parseTelemetryLine()
         s_input.mode = gearMode == 'S' ? SPORT : NORMAL;
     }
 
-    s_input.light_lowbeam  = rx_buf[53] == 'T';
+    s_input.light_lowbeam      = rx_buf[53] == 'T';
+    s_input.light_esc          = rx_buf[54] == 'T';
 
     led1 = !led1;
 }
@@ -553,13 +555,24 @@ void canSendGearboxData() {
 }
 
 void canSendTcSymbol() {
-    static bool last_tc = false;
+    static bool last = false;
     static uint8_t counter = 0;
 
-    if (s_input.light_tc != last_tc || (++counter % 100 == 0)) {
-        last_tc = s_input.light_tc;
+    if (s_input.light_tc != last || (++counter % 100 == 0)) {
+        last = s_input.light_tc;
         counter = 0;
         canSendErrorLight(DTC_SYMBOL_ONLY, s_input.light_tc);
+    }
+}
+
+void canSendEscSymbol() {
+    static bool last = false;
+    static uint8_t counter = 0;
+
+    if (s_input.light_esc != last || (++counter % 100 == 0)) {
+        last = s_input.light_esc;
+        counter = 0;
+        canSendErrorLight(DSC_TRIANGLE_SYMBOL_ONLY, s_input.light_esc);
     }
 }
 
@@ -648,6 +661,7 @@ int main() {
                 queuePush(canSendSteeringWheel);
                 queuePush(canSendDmeStatus);
                 queuePush(canSendTcSymbol);
+                queuePush(canSendEscSymbol);
             }
             // Send every 200 ms
             if (canCounter % 20 == 7) {
