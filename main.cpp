@@ -126,8 +126,8 @@ struct SInput {
 
     bool custom_light_on = false;
     bool light_shift = false;
-    bool light_main = false;
-    bool light_backlight = true;
+    bool light_highbeam = false;
+    bool light_lowbeam = true;
     bool light_tc = false;
     bool oil_warn = false;
     bool battery_warn = false;
@@ -175,7 +175,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 53) {
+    if (strlen(rx_buf) < 54) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -218,7 +218,7 @@ void parseTelemetryLine()
 
     // Dash flags: 32–40 (T/F)
     s_input.light_shift      = rx_buf[32] == 'T';
-    s_input.light_main       = rx_buf[33] == 'T';
+    s_input.light_highbeam       = rx_buf[33] == 'T';
     s_input.handbrake        = rx_buf[34] == 'T';
     s_input.light_tc         = rx_buf[35] == 'T';
 
@@ -256,17 +256,17 @@ void parseTelemetryLine()
     uint8_t gearMode = rx_buf[52];
 
     // Set gear variables
-    if (gear == NEUTRAL) {
+    if (gearMode == 'P') {
+        s_input.manualGear = NONE;
+        s_input.currentGear = PARK;
+        s_input.mode = NORMAL;
+    } else if (gear == NEUTRAL) {
         s_input.manualGear = NONE;
         s_input.currentGear = NEUTRAL;
         s_input.mode = NORMAL;
     } else if (gear == REVERSE) {
         s_input.manualGear = NONE;
         s_input.currentGear = REVERSE;
-        s_input.mode = NORMAL;
-    } else if (gear == PARK) {
-        s_input.manualGear = NONE;
-        s_input.currentGear = PARK;
         s_input.mode = NORMAL;
     } else if (gearMode == 'A') {
         s_input.manualGear = NONE;
@@ -277,6 +277,8 @@ void parseTelemetryLine()
         s_input.currentGear = DRIVE;
         s_input.mode = gearMode == 'S' ? SPORT : NORMAL;
     }
+
+    s_input.light_lowbeam  = rx_buf[53] == 'T';
 
     led1 = !led1;
 }
@@ -339,10 +341,10 @@ void canSendLights() {
     static uint8_t frame[8] = {0x00, 0x00, 0xF7, 0, 0, 0, 0, 0};
 
     uint8_t lights = 0;
-    if (s_input.light_backlight) lights |= L_BACKLIGHT;
-    if (false)                   lights |= L_DIP;
-    if (s_input.light_main)      lights |= L_MAIN;
-    if (false)                   lights |= L_FOG;
+    if (s_input.light_lowbeam || s_input.light_highbeam) lights |= L_BACKLIGHT;
+    if (false) lights |= L_DIP;
+    if (s_input.light_highbeam) lights |= L_MAIN;
+    if (false) lights |= L_FOG;
 
     frame[0] = lights;
     sendCAN(ID, frame);
