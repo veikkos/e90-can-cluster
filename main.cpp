@@ -135,6 +135,7 @@ struct SInput {
     bool abs_warn = false;
     bool engine_temp_yellow = false;
     bool engine_temp_red = false;
+    bool check_engine = false;
 
     bool handbrake = false;
 };
@@ -176,7 +177,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 55) {
+    if (strlen(rx_buf) < 56) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -281,6 +282,7 @@ void parseTelemetryLine()
 
     s_input.light_lowbeam      = rx_buf[53] == 'T';
     s_input.light_esc          = rx_buf[54] == 'T';
+    s_input.check_engine       = rx_buf[55] == 'T';
 
     led1 = !led1;
 }
@@ -599,6 +601,17 @@ void canSendEngineTempRedSymbol() {
     }
 }
 
+void canSendCheckEngineSymbol() {
+    static bool last_value = false;
+    static uint8_t counter = 0;
+
+    if (s_input.check_engine != last_value || (++counter % 10 == 0)) {
+        last_value = s_input.check_engine;
+        counter = 0;
+        canSendErrorLight(CHECK_ENGINE_DOUBLE, last_value);
+    }
+}
+
 void canSendCustomSymbol() {
     static bool last_state = false;
     static uint16_t last_number = 0;
@@ -681,6 +694,7 @@ int main() {
                 queuePush(canSuppressService);
                 queuePush(canSendEngineTempYellowSymbol);
                 queuePush(canSendEngineTempRedSymbol);
+                queuePush(canSendCheckEngineSymbol);
             }
             // Send every 1 s
             if (canCounter % 100 == 35) {
