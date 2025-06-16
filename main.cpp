@@ -726,9 +726,9 @@ int main() {
             canCounter++;
         }
 
-        // Allow 2.5 ms time for the serial CAN bus to transmit the frame. With 115200 baud
+        // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
         // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
-        if (now_us - lastTaskTime >= 2500) {
+        if (now_us - lastTaskTime >= 3000) {
             lastTaskTime = now_us;
             CanFunction task = queuePop();
             if (task) {
