@@ -98,7 +98,10 @@ enum ErrorLightID : uint16_t {
     CAR_AHEAD_YELLOW = 282,
     CAR_AHEAD_RED = 283,
     AUTO_GEAR_BOX_YELLOW = 349,
-    DTC_SYMBOL_ONLY = 357
+    DTC_SYMBOL_ONLY = 357,
+    GEARBOX_TEMP_YELLOW = 104,
+    GEARBOX_TEMP_RED = 105,
+    BRAKES_HOT = 353
     // What's there on 400 and beyond...?
 };
 
@@ -136,6 +139,7 @@ struct SInput {
     bool engine_temp_yellow = false;
     bool engine_temp_red = false;
     bool check_engine = false;
+    bool clutch_temp = false;
 
     bool handbrake = false;
 };
@@ -177,7 +181,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 56) {
+    if (strlen(rx_buf) < 57) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -283,6 +287,7 @@ void parseTelemetryLine()
     s_input.light_lowbeam      = rx_buf[53] == 'T';
     s_input.light_esc          = rx_buf[54] == 'T';
     s_input.check_engine       = rx_buf[55] == 'T';
+    s_input.clutch_temp        = rx_buf[56] == 'T';
 
     led1 = !led1;
 }
@@ -612,6 +617,17 @@ void canSendCheckEngineSymbol() {
     }
 }
 
+void canSendClutchTempSymbol() {
+    static bool last_value = false;
+    static uint8_t counter = 0;
+
+    if (s_input.clutch_temp != last_value || (++counter % 10 == 0)) {
+        last_value = s_input.clutch_temp;
+        counter = 0;
+        canSendErrorLight(GEARBOX_TEMP_YELLOW, last_value);
+    }
+}
+
 void canSendCustomSymbol() {
     static bool last_state = false;
     static uint16_t last_number = 0;
@@ -695,6 +711,7 @@ int main() {
                 queuePush(canSendEngineTempYellowSymbol);
                 queuePush(canSendEngineTempRedSymbol);
                 queuePush(canSendCheckEngineSymbol);
+                queuePush(canSendClutchTempSymbol);
             }
             // Send every 1 s
             if (canCounter % 100 == 35) {
