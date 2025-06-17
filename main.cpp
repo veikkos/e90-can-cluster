@@ -10,7 +10,7 @@ DigitalOut led2(LED2);
 
 // Serial interfaces
 BufferedSerial canSerial(p9, p10, 115200);
-BufferedSerial pc(USBTX, USBRX, 115200);
+BufferedSerial pc(USBTX, USBRX, 921600);
 
 // Timer
 Timer canTimer;
