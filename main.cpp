@@ -146,6 +146,8 @@ struct SInput {
     bool clutch_temp = false;
 
     bool handbrake = false;
+
+    uint16_t cruise_speed = 0;
 };
 
 SInput s_input;
@@ -323,13 +325,17 @@ void canSendRPM() {
     sendCAN(ID, data);
 }
 
+inline uint16_t kmhToMph(uint16_t kmh, int correction) {
+    return (min((int)kmh, 260) * (620 + correction) + 500) / 1000;
+}
+
 void canSendSpeed() {
     const uint32_t ID = 0x1A6;
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
     const int calibration = 30; // This value is empirically set so the speed matches on this particular cluster
-    uint16_t speed_mph = (min((int)s_input.speed, 260) * (620 + calibration) + 500) / 1000;
+    uint16_t speed_mph = kmhToMph(s_input.speed, calibration);
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
@@ -618,6 +624,52 @@ void canSendOilLevel() {
     sendCAN(ID, frame);
 }
 
+inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
+    static uint8_t timer = 0;
+    static uint16_t ms_accumulator = 0;
+
+    const uint16_t TIMER_INTERVAL_MS = 200;
+    const uint8_t TIMER_STEP = 17;
+
+    ms_accumulator += call_interval_ms;
+    if (ms_accumulator >= TIMER_INTERVAL_MS) {
+        ms_accumulator = 0;
+        timer = (timer + TIMER_STEP) % 256;
+    }
+
+    return timer;
+}
+
+void canSendCruiseControl() {
+    const uint32_t ID = 0x193;
+
+    static uint8_t last_mph = 0xFE;
+    static bool last_enabled = false;
+
+    bool cruise_enabled = s_input.cruise_speed != 0;
+
+    uint8_t mph = cruise_enabled ? kmhToMph(s_input.cruise_speed, 0x00) : 0xFE;
+    uint8_t cruise_status = cruise_enabled ? 0xF5 : 0xF1;
+    uint8_t cc_flag = cruise_enabled ? 0x58 : 0x50;
+    uint8_t speed_update = (mph != last_mph || cruise_enabled != last_enabled) ? 0x01 : 0x00;
+
+    last_mph = mph;
+    last_enabled = cruise_enabled;
+
+    uint8_t frame[8] = {
+        getCruiseTimer(100),
+        mph,
+        cruise_status,
+        0x00,
+        0xF8,
+        cc_flag,
+        speed_update,
+        0x00
+    };
+
+    sendCAN(ID, frame);
+}
+
 // CAN queue
 const int MaxQueueSize = 64;
 typedef void (*CanFunction)();
@@ -654,6 +706,7 @@ int main() {
                 queuePush(canSendGearboxData);
                 queuePush(canSendSteeringWheel);
                 queuePush(canSendDmeStatus);
+                queuePush(canSendCruiseControl);
             }
             // Send every 50 ms
             if (canCounter % 5 == 1) {
