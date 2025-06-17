@@ -566,72 +566,30 @@ void canSendGearboxData() {
     sendCAN(ID, frame);
 }
 
-void canSendTcSymbol() {
-    static bool last = false;
-    static uint8_t counter = 0;
-
-    if (s_input.light_tc != last || (++counter % 100 == 0)) {
-        last = s_input.light_tc;
-        counter = 0;
-        canSendErrorLight(DTC_SYMBOL_ONLY, s_input.light_tc);
+#define DEFINE_CAN_SEND_SYMBOL(fn_name, signal_expr, symbol_const, interval, offset) \
+    void fn_name() {                                                                 \
+        static bool last_value = false;                                              \
+        static uint8_t counter = offset;                                             \
+        bool value = (signal_expr);                                                  \
+        counter++;                                                                   \
+        if (value != last_value || (counter % (interval) == 0)) {                    \
+            last_value = value;                                                      \
+            counter = 0;                                                             \
+            canSendErrorLight(symbol_const, value);                                  \
+        }                                                                            \
     }
-}
 
-void canSendEscSymbol() {
-    static bool last = false;
-    static uint8_t counter = 0;
+// Interval = 200 ms
+DEFINE_CAN_SEND_SYMBOL(canSendEngineTempYellowSymbol, s_input.engine_temp_yellow && !s_input.engine_temp_red, OVERHEAT_YELLOW, 25, 0)
+DEFINE_CAN_SEND_SYMBOL(canSendEngineTempRedSymbol, s_input.engine_temp_red, OVERHEAT_RED, 25, 1)
+DEFINE_CAN_SEND_SYMBOL(canSendCheckEngineSymbol, s_input.check_engine, CHECK_ENGINE_DOUBLE, 25, 2)
+DEFINE_CAN_SEND_SYMBOL(canSendClutchTempSymbol, s_input.clutch_temp, GEARBOX_TEMP_YELLOW, 25, 3)
+DEFINE_CAN_SEND_SYMBOL(canSendOilWarningSymbol, s_input.oil_warn, OIL_RED, 25, 4)
+DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn, BATTERY_RED, 25, 5)
 
-    if (s_input.light_esc != last || (++counter % 100 == 0)) {
-        last = s_input.light_esc;
-        counter = 0;
-        canSendErrorLight(DSC_TRIANGLE_SYMBOL_ONLY, s_input.light_esc);
-    }
-}
-
-void canSendEngineTempYellowSymbol() {
-    static bool last_value = false;
-    static uint8_t counter = 0;
-    bool value = s_input.engine_temp_yellow && !s_input.engine_temp_red;
-
-    if (value != last_value || (++counter % 10 == 0)) {
-        last_value = value;
-        counter = 0;
-        canSendErrorLight(OVERHEAT_YELLOW, last_value);
-    }
-}
-
-void canSendEngineTempRedSymbol() {
-    static bool last_value = false;
-    static uint8_t counter = 0;
-
-    if (s_input.engine_temp_red != last_value || (++counter % 10 == 0)) {
-        last_value = s_input.engine_temp_red;
-        counter = 0;
-        canSendErrorLight(OVERHEAT_RED, last_value);
-    }
-}
-
-void canSendCheckEngineSymbol() {
-    static bool last_value = false;
-    static uint8_t counter = 0;
-
-    if (s_input.check_engine != last_value || (++counter % 10 == 0)) {
-        last_value = s_input.check_engine;
-        counter = 0;
-        canSendErrorLight(CHECK_ENGINE_DOUBLE, last_value);
-    }
-}
-
-void canSendClutchTempSymbol() {
-    static bool last_value = false;
-    static uint8_t counter = 0;
-
-    if (s_input.clutch_temp != last_value || (++counter % 10 == 0)) {
-        last_value = s_input.clutch_temp;
-        counter = 0;
-        canSendErrorLight(GEARBOX_TEMP_YELLOW, last_value);
-    }
-}
+// Interval = 50 ms
+DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
+DEFINE_CAN_SEND_SYMBOL(canSendEscSymbol, s_input.light_esc, DSC_TRIANGLE_SYMBOL_ONLY, 100, 2)
 
 void canSendCustomSymbol() {
     static bool last_state = false;
@@ -693,36 +651,41 @@ int main() {
             if (canCounter % 10 == 0) {
                 queuePush(canSendIgnitionFrame);
                 queuePush(canSendEngineTempAndFuelInjection);
+                queuePush(canSendGearboxData);
+                queuePush(canSendSteeringWheel);
+                queuePush(canSendDmeStatus);
             }
             // Send every 50 ms
             if (canCounter % 5 == 1) {
                 queuePush(canSendRPM);
                 queuePush(canSendSpeed);
-                queuePush(canSendSteeringWheel);
-                queuePush(canSendDmeStatus);
                 queuePush(canSendTcSymbol);
                 queuePush(canSendEscSymbol);
             }
-            // Send every 200 ms
+            // Send every 200 ms (group 1)
             if (canCounter % 20 == 7) {
-                queuePush(canSendGearboxData);
                 queuePush(canSendLights);
                 queuePush(canSendIndicator);
                 queuePush(canSendAbs);
                 queuePush(canSendAbsCounter);
                 queuePush(canSendAirbagCounter);
                 queuePush(canSendFuel);
-                queuePush(canSendCustomSymbol);
-            }
-            // Send every 500 ms
-            if (canCounter % 50 == 5) {
                 queuePush(canSendHandbrake);
-                queuePush(canSuppressSos);
-                queuePush(canSuppressService);
+            }
+            // Send every 200 ms (symbols)
+            if (canCounter % 20 == 13) {
                 queuePush(canSendEngineTempYellowSymbol);
                 queuePush(canSendEngineTempRedSymbol);
                 queuePush(canSendCheckEngineSymbol);
                 queuePush(canSendClutchTempSymbol);
+                queuePush(canSendOilWarningSymbol);
+                queuePush(canSendBatteryWarningSymbol);
+                queuePush(canSendCustomSymbol);
+            }
+            // Send every 500 ms
+            if (canCounter % 50 == 5) {
+                queuePush(canSuppressSos);
+                queuePush(canSuppressService);
             }
             // Send every 1 s
             if (canCounter % 100 == 35) {
