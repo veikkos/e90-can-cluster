@@ -7,6 +7,8 @@
 // LED indicators
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
+DigitalOut led3(LED3);
+DigitalOut led4(LED4);
 
 // Serial interfaces
 BufferedSerial canSerial(p9, p10, 115200);
@@ -17,6 +19,8 @@ Timer canTimer;
 uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
+uint32_t lastLogTime = 0;
+int eventsSentThisSecond = 0;
 
 // Define M_PI if not present
 #ifndef M_PI
@@ -300,6 +304,7 @@ void sendCAN(uint32_t id, const uint8_t* data) {
     };
     memcpy(&buf[6], data, 8);
     canSerial.write(buf, 14);
+    eventsSentThisSecond++;
 }
 
 void canSendIgnitionFrame() {
@@ -663,7 +668,13 @@ int queueHead = 0;
 int queueTail = 0;
 
 inline bool queueIsEmpty() { return queueHead == queueTail; }
-inline bool queueIsFull() { return ((queueTail + 1) % MaxQueueSize) == queueHead; }
+inline bool queueIsFull() {
+    bool isFull = ((queueTail + 1) % MaxQueueSize) == queueHead;
+    if (isFull) {
+        led3 = true;
+    }
+    return isFull;
+}
 inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
 inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
@@ -724,6 +735,14 @@ int main() {
             }
 
             canCounter++;
+
+            if (now_ms - lastLogTime >= 1000) {
+                if (eventsSentThisSecond > 170) {
+                    led4 = true;
+                }
+                eventsSentThisSecond = 0;
+                lastLogTime = now_ms;
+            }
         }
 
         // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
