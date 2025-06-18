@@ -147,6 +147,7 @@ struct SInput {
 
     bool handbrake = false;
 
+    bool cruise_enabled = false;
     uint16_t cruise_speed = 0;
 };
 
@@ -187,7 +188,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 57) {
+    if (strlen(rx_buf) < 62) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -294,6 +295,12 @@ void parseTelemetryLine()
     s_input.light_esc          = rx_buf[54] == 'T';
     s_input.check_engine       = rx_buf[55] == 'T';
     s_input.clutch_temp        = rx_buf[56] == 'T';
+
+    // Cruise speed: 57–60
+    memcpy(buf, &rx_buf[57], 4); buf[4] = '\0';
+    s_input.cruise_speed = atoi(buf) / 10;
+
+    s_input.cruise_enabled     = rx_buf[61] == '1';
 
     led1 = !led1;
 }
@@ -643,22 +650,20 @@ inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
 void canSendCruiseControl() {
     const uint32_t ID = 0x193;
 
-    static uint8_t last_mph = 0xFE;
+    static uint8_t last_kmh = 0xFE;
     static bool last_enabled = false;
 
-    bool cruise_enabled = s_input.cruise_speed != 0;
+    uint8_t kmh = s_input.cruise_enabled ? s_input.cruise_speed : 0xFE;
+    uint8_t cruise_status = s_input.cruise_enabled ? 0xF4 : 0xF1; // 0xF5 for mph!
+    uint8_t cc_flag = s_input.cruise_enabled ? 0x58 : 0x50;
+    uint8_t speed_update = (kmh != last_kmh || s_input.cruise_enabled != last_enabled) ? 0x01 : 0x00;
 
-    uint8_t mph = cruise_enabled ? kmhToMph(s_input.cruise_speed, 0x00) : 0xFE;
-    uint8_t cruise_status = cruise_enabled ? 0xF5 : 0xF1;
-    uint8_t cc_flag = cruise_enabled ? 0x58 : 0x50;
-    uint8_t speed_update = (mph != last_mph || cruise_enabled != last_enabled) ? 0x01 : 0x00;
-
-    last_mph = mph;
-    last_enabled = cruise_enabled;
+    last_kmh = kmh;
+    last_enabled = s_input.cruise_enabled;
 
     uint8_t frame[8] = {
         getCruiseTimer(100),
-        mph,
+        kmh,
         cruise_status,
         0x00,
         0xF8,
