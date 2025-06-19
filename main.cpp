@@ -145,6 +145,7 @@ struct SInput {
     bool engine_temp_red = false;
     bool check_engine = false;
     bool clutch_temp = false;
+    bool brake_temp = false;
 
     bool handbrake = false;
 
@@ -189,7 +190,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 63) {
+    if (strlen(rx_buf) < 64) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -297,12 +298,13 @@ void parseTelemetryLine()
     s_input.check_engine       = rx_buf[55] == 'T';
     s_input.clutch_temp        = rx_buf[56] == 'T';
     s_input.light_fog          = rx_buf[57] == 'T';
+    s_input.brake_temp         = rx_buf[58] == 'T';
 
-    // Cruise speed: 58–61
-    memcpy(buf, &rx_buf[58], 4); buf[4] = '\0';
+    // Cruise speed: 59–62
+    memcpy(buf, &rx_buf[59], 4); buf[4] = '\0';
     s_input.cruise_speed = atoi(buf) / 10;
 
-    s_input.cruise_enabled     = rx_buf[62] == '1';
+    s_input.cruise_enabled     = rx_buf[63] == '1';
 
     led1 = !led1;
 }
@@ -601,6 +603,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendCheckEngineSymbol, s_input.check_engine, CHECK_ENG
 DEFINE_CAN_SEND_SYMBOL(canSendClutchTempSymbol, s_input.clutch_temp, GEARBOX_TEMP_YELLOW, 25, 3)
 DEFINE_CAN_SEND_SYMBOL(canSendOilWarningSymbol, s_input.oil_warn, OIL_RED, 25, 4)
 DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn, BATTERY_RED, 25, 5)
+DEFINE_CAN_SEND_SYMBOL(canSendBrakeTempSymbol, s_input.brake_temp, BRAKES_HOT, 25, 6)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -741,6 +744,7 @@ int main() {
                 queuePush(canSendOilWarningSymbol);
                 queuePush(canSendBatteryWarningSymbol);
                 queuePush(canSendCustomSymbol);
+                queuePush(canSendBrakeTempSymbol);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
