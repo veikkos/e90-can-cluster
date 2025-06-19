@@ -180,6 +180,30 @@ void pollSerial() {
     }
 }
 
+static inline uint8_t parse_digit(char c) {
+    return c - '0';
+}
+
+static inline bool parse_bool(char c) {
+    return c == 'T';
+}
+
+static inline uint16_t parse_u8_2(const char* p) {
+    return 10 * parse_digit(p[0]) + parse_digit(p[1]);
+}
+
+static inline uint16_t parse_u8_3(const char* p) {
+    return 100 * parse_digit(p[0]) + 10 * parse_digit(p[1]) + parse_digit(p[2]);
+}
+
+static inline uint16_t parse_u8_4(const char* p) {
+    return 1000 * parse_digit(p[0]) + 100 * parse_digit(p[1]) + 10 * parse_digit(p[2]) + parse_digit(p[3]);
+}
+
+static inline uint16_t parse_u8_5(const char* p) {
+    return 10000 * parse_digit(p[0]) + 1000 * parse_digit(p[1]) + 100 * parse_digit(p[2]) + 10 * parse_digit(p[3]) + parse_digit(p[4]);
+}
+
 void parseTelemetryLine()
 {
     if (!line_ready) return;
@@ -198,47 +222,36 @@ void parseTelemetryLine()
     char buf[8];
 
     // Timestamp (1–13)
-    memcpy(buf, &rx_buf[1], 4); buf[4] = '\0';
-    s_input.time_year = atoi(buf);
-    memcpy(buf, &rx_buf[5], 2); buf[2] = '\0';
-    s_input.time_month = atoi(buf);
-    memcpy(buf, &rx_buf[7], 2); buf[2] = '\0';
-    s_input.time_day = atoi(buf);
-    memcpy(buf, &rx_buf[9], 2); buf[2] = '\0';
-    s_input.time_hour = atoi(buf);
-    memcpy(buf, &rx_buf[11], 2); buf[2] = '\0';
-    s_input.time_minute = atoi(buf);
-    memcpy(buf, &rx_buf[13], 2); buf[2] = '\0';
-    s_input.time_second = atoi(buf);
+    s_input.time_year   = parse_u8_4(&rx_buf[1]);
+    s_input.time_month  = parse_u8_2(&rx_buf[5]);
+    s_input.time_day    = parse_u8_2(&rx_buf[7]);
+    s_input.time_hour   = parse_u8_2(&rx_buf[9]);
+    s_input.time_minute = parse_u8_2(&rx_buf[11]);
+    s_input.time_second = parse_u8_2(&rx_buf[13]);
 
     // RPM: 15–19
-    memcpy(buf, &rx_buf[15], 5); buf[5] = '\0';
-    s_input.rpm = atoi(buf);
+    s_input.rpm = parse_u8_5(&rx_buf[15]);
 
     // Speed: 20–23
-    memcpy(buf, &rx_buf[20], 4); buf[4] = '\0';
-    s_input.speed = atoi(buf) / 10;
+    s_input.speed = parse_u8_4(&rx_buf[20]) / 10;
 
     // Gear: 24
-    memcpy(buf, &rx_buf[24], 1); buf[1] = '\0';
-    uint8_t gear = atoi(buf);
+    uint8_t gear = parse_digit(rx_buf[24]);
 
     // Temp: 25–27
-    memcpy(buf, &rx_buf[25], 3); buf[3] = '\0';
-    s_input.water_temp = atoi(buf);
+    s_input.water_temp = parse_u8_3(&rx_buf[25]);
 
     // Fuel: 28–31
-    memcpy(buf, &rx_buf[28], 4); buf[4] = '\0';
-    s_input.fuel = atoi(buf);
+    s_input.fuel = parse_u8_4(&rx_buf[28]);
 
     // Dash flags: 32–40 (T/F)
-    s_input.light_shift      = rx_buf[32] == 'T';
-    s_input.light_highbeam       = rx_buf[33] == 'T';
-    s_input.handbrake        = rx_buf[34] == 'T';
-    s_input.light_tc         = rx_buf[35] == 'T';
+    s_input.light_shift      = parse_bool(rx_buf[32]);
+    s_input.light_highbeam   = parse_bool(rx_buf[33]);
+    s_input.handbrake        = parse_bool(rx_buf[34]);
+    s_input.light_tc         = parse_bool(rx_buf[35]);
 
-    bool left_signal  = rx_buf[36] == 'T';
-    bool right_signal = rx_buf[37] == 'T';
+    bool left_signal  = parse_bool(rx_buf[36]);
+    bool right_signal = parse_bool(rx_buf[37]);
 
     if (left_signal && right_signal) {
         s_input.indicator_state = I_HAZZARD;
@@ -250,22 +263,20 @@ void parseTelemetryLine()
         s_input.indicator_state = I_OFF;
     }
 
-    s_input.oil_warn           = rx_buf[38] == 'T';
-    s_input.battery_warn       = rx_buf[39] == 'T';
-    s_input.abs_warn           = rx_buf[40] == 'T';
-    s_input.engine_temp_yellow = rx_buf[41] == 'T';
-    s_input.engine_temp_red    = rx_buf[42] == 'T';
+    s_input.oil_warn           = parse_bool(rx_buf[38]);
+    s_input.battery_warn       = parse_bool(rx_buf[39]);
+    s_input.abs_warn           = parse_bool(rx_buf[40]);
+    s_input.engine_temp_yellow = parse_bool(rx_buf[41]);
+    s_input.engine_temp_red    = parse_bool(rx_buf[42]);
 
     // Fuel injection amount: 43–46
-    memcpy(buf, &rx_buf[43], 4); buf[4] = '\0';
-    s_input.fuel_injection = atoi(buf);
+    s_input.fuel_injection = parse_u8_4(&rx_buf[43]);
 
     // Custom light: 47–50
-    memcpy(buf, &rx_buf[47], 4); buf[4] = '\0';
-    s_input.custom_light = atoi(buf);
+    s_input.custom_light = parse_u8_4(&rx_buf[47]);
 
     // Custom light on: 51
-    s_input.custom_light_on  = rx_buf[51] == 'T';
+    s_input.custom_light_on = parse_bool(rx_buf[51]);
 
     // Gear mode: 52
     uint8_t gearMode = rx_buf[52];
@@ -293,18 +304,17 @@ void parseTelemetryLine()
         s_input.mode = gearMode == 'S' ? SPORT : NORMAL;
     }
 
-    s_input.light_lowbeam      = rx_buf[53] == 'T';
-    s_input.light_esc          = rx_buf[54] == 'T';
-    s_input.check_engine       = rx_buf[55] == 'T';
-    s_input.clutch_temp        = rx_buf[56] == 'T';
-    s_input.light_fog          = rx_buf[57] == 'T';
-    s_input.brake_temp         = rx_buf[58] == 'T';
+    s_input.light_lowbeam   = parse_bool(rx_buf[53]);
+    s_input.light_esc       = parse_bool(rx_buf[54]);
+    s_input.check_engine    = parse_bool(rx_buf[55]);
+    s_input.clutch_temp     = parse_bool(rx_buf[56]);
+    s_input.light_fog       = parse_bool(rx_buf[57]);
+    s_input.brake_temp      = parse_bool(rx_buf[58]);
 
     // Cruise speed: 59–62
-    memcpy(buf, &rx_buf[59], 4); buf[4] = '\0';
-    s_input.cruise_speed = atoi(buf) / 10;
+    s_input.cruise_speed = parse_u8_4(&rx_buf[59]) / 10;
 
-    s_input.cruise_enabled     = rx_buf[63] == '1';
+    s_input.cruise_enabled = rx_buf[63] == '1';
 
     led1 = !led1;
 }
