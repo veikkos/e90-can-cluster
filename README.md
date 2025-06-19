@@ -77,6 +77,58 @@ Remember to connect the cluster GND, microcontroller GND and Serial CAN bus adap
 
 The cluster needs 12V power supply. 12V wall adapter can be used, but you need to make sure it's regulated. If you are unsure you should check that the voltage is roughly 12V with a multimeter when there is no load to avoid overvoltage.
 
+## The API
+
+The cluster can be controlled over the virtual serial port using a simple text-based API. Please note that the example has spaces for readability, but the actual messages should not have spaces. The baud rate is __921600__.
+
+`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTF 0680 1 \n`
+
+Breakdown:
+
+    Start of the message: S
+
+    Timestamp: 2025-06-19 16:45:30
+
+    RPM: 2350
+
+    Speed: 0853 = 85.3 km/h
+
+    Gear: 3 (2nd gear), Reverse is 0, Neutral is 1
+
+    Engine Temp: 95°C
+
+    Fuel: 0734 = 73.4% (0-1000)
+
+    Lights: TFFTFTFTFFT
+        - T = on, F = off
+        - 1st light: Shift indicator
+        - 2nd light: High beams
+        - 3rd light: Handbrake
+        - 4th light: Traction control
+        - 5th light: Left turn signal
+        - 6th light: Right turn signal
+        - 7th light: Oil warning
+        - 8th light: Battery warning
+        - 9th light: ABS
+        - 10th light: High engine temperature, yellow
+        - 11th light: High clutch temperature, red
+
+    Fuek injection: 0087 = 8.7ul per 100 ms
+
+    Custom light: 0004T (Show symbol #4, 0000F to disable)
+
+    Gear extension: M (M = semi-automatic, S = sport mode, P = park, A = automatic, C = common
+
+    Extra lights: TFTF
+        - 1st: Low beam headlights (backlight)
+        - 2nd: ESC (Electronic Stability Control)
+        - 3rd: Check engine light
+        - 4th: Clutch temperature warning
+
+    Cruise speed: 0680 = 68.0 km/h
+
+    Cruise mode: 1 (on), 0 (off)
+
 ## Serial CAN bus adapter settings
 
 - Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
