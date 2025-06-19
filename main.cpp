@@ -135,6 +135,7 @@ struct SInput {
     bool light_shift = false;
     bool light_highbeam = false;
     bool light_lowbeam = true;
+    bool light_fog = false;
     bool light_tc = false;
     bool light_esc = false;
     bool oil_warn = false;
@@ -154,7 +155,7 @@ struct SInput {
 SInput s_input;
 
 // Serial RX buffer
-#define RX_BUF_SIZE 64
+#define RX_BUF_SIZE 96
 char rx_buf[RX_BUF_SIZE];
 volatile size_t rx_pos = 0;
 volatile bool line_ready = false;
@@ -188,7 +189,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 62) {
+    if (strlen(rx_buf) < 63) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -295,12 +296,13 @@ void parseTelemetryLine()
     s_input.light_esc          = rx_buf[54] == 'T';
     s_input.check_engine       = rx_buf[55] == 'T';
     s_input.clutch_temp        = rx_buf[56] == 'T';
+    s_input.light_fog          = rx_buf[57] == 'T';
 
-    // Cruise speed: 57–60
-    memcpy(buf, &rx_buf[57], 4); buf[4] = '\0';
+    // Cruise speed: 58–61
+    memcpy(buf, &rx_buf[58], 4); buf[4] = '\0';
     s_input.cruise_speed = atoi(buf) / 10;
 
-    s_input.cruise_enabled     = rx_buf[61] == '1';
+    s_input.cruise_enabled     = rx_buf[62] == '1';
 
     led1 = !led1;
 }
@@ -369,9 +371,9 @@ void canSendLights() {
 
     uint8_t lights = 0;
     if (s_input.light_lowbeam || s_input.light_highbeam) lights |= L_BACKLIGHT;
-    if (false) lights |= L_DIP;
+    if (s_input.light_fog) lights |= L_DIP;
     if (s_input.light_highbeam) lights |= L_MAIN;
-    if (false) lights |= L_FOG;
+    if (s_input.light_fog) lights |= L_FOG;
 
     frame[0] = lights;
     sendCAN(ID, frame);
