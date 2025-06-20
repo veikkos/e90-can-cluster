@@ -435,7 +435,7 @@ void canSendAbs() {
 void canSendEngineTempAndFuelInjection() {
     const uint32_t ID = 0x1D0;
     static uint8_t frame[8] = {0x8B, 0xFF, 0x00, 0xCD, 0x00, 0x00, 0xCD, 0xA8};
-    const uint8_t engine_run_state = 0x2;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
+    const uint8_t engine_run_state = s_input.rpm > 100 ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
     static uint16_t fuel_injection_total = 0;
 
     frame[0] = s_input.water_temp + 48;
