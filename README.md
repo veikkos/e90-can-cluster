@@ -23,6 +23,7 @@ The code is able to control following things on the cluster
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
     - Low fuel warning is automatic based on the level
+    - Range is calculated by the cluster
 - Current fuel consumption needle
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
@@ -38,6 +39,7 @@ The code is able to control following things on the cluster
     - Stability control
     - High or very high engine temperature
     - High clutch temperature
+    - High brake temperature
     - ... and more can (and will) be added
 - Water temperature
     - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
@@ -48,7 +50,7 @@ The code is able to control following things on the cluster
     - ABS
     - SOS call system
     - Steering wheel
-    - Airbag
+    - Airbags
 
 ## Pinout
 
@@ -95,7 +97,7 @@ Breakdown:
 
     Gear: 3 (2nd gear), Reverse is 0, Neutral is 1
 
-    Engine Temp: 95°C
+    Engine Temp: 095 = 95°C
 
     Fuel: 0734 = 73.4% (0-1000)
 
@@ -111,11 +113,11 @@ Breakdown:
         - 8th light: Battery warning
         - 9th light: ABS
         - 10th light: High engine temperature, yellow
-        - 11th light: High clutch temperature, red
+        - 11th light: High engine temperature, red
 
     Fuek injection: 0087 = 8.7ul per 100 ms
 
-    Custom light: 0004T (Show symbol #4, 0000F to disable)
+    Custom light: 0004T (Show symbol #4, 0004F to disable)
 
     Gear extension: M (M = semi-automatic, S = sport mode, P = park, A = automatic, C = common)
 
