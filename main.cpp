@@ -147,6 +147,14 @@ struct SInput {
     bool clutch_temp = false;
     bool brake_temp = false;
 
+    struct {
+        bool fl_deflated = false;
+        bool fr_deflated = false;
+        bool rl_deflated = false;
+        bool rr_deflated = false;
+        bool all_deflated = false;
+    } tires;
+
     bool handbrake = false;
 
     bool cruise_enabled = false;
@@ -176,6 +184,9 @@ void pollSerial() {
                 rx_pos = 0;
             } else if (rx_pos < RX_BUF_SIZE - 1) {
                 rx_buf[rx_pos++] = c;
+            } else {
+                // Never reached the end of the package so start over
+                rx_pos = 0;
             }
         }
     }
@@ -215,7 +226,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 64) {
+    if (strlen(rx_buf) < 68) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -312,10 +323,28 @@ void parseTelemetryLine()
     s_input.light_fog       = parse_bool(rx_buf[57]);
     s_input.brake_temp      = parse_bool(rx_buf[58]);
 
-    // Cruise speed: 59–62
-    s_input.cruise_speed = parse_u8_4(&rx_buf[59]) / 10;
+    s_input.tires.fl_deflated = parse_bool(rx_buf[59]);
+    s_input.tires.fr_deflated = parse_bool(rx_buf[60]);
+    s_input.tires.rl_deflated = parse_bool(rx_buf[61]);
+    s_input.tires.rr_deflated = parse_bool(rx_buf[62]);
 
-    s_input.cruise_enabled = rx_buf[63] == '1';
+    bool all_deflated = s_input.tires.fl_deflated &&
+        s_input.tires.fr_deflated &&
+        s_input.tires.rl_deflated &&
+        s_input.tires.rr_deflated;
+    s_input.tires.all_deflated = all_deflated;
+
+    if (all_deflated) {
+        s_input.tires.fl_deflated = false;
+        s_input.tires.fr_deflated = false;
+        s_input.tires.rl_deflated = false;
+        s_input.tires.rr_deflated = false;
+    }
+
+    // Cruise speed: 63–66
+    s_input.cruise_speed = parse_u8_4(&rx_buf[63]) / 10;
+
+    s_input.cruise_enabled = rx_buf[67] == '1';
 
     led1 = !led1;
 }
@@ -615,6 +644,11 @@ DEFINE_CAN_SEND_SYMBOL(canSendClutchTempSymbol, s_input.clutch_temp, GEARBOX_TEM
 DEFINE_CAN_SEND_SYMBOL(canSendOilWarningSymbol, s_input.oil_warn, OIL_RED, 25, 4)
 DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn, BATTERY_RED, 25, 5)
 DEFINE_CAN_SEND_SYMBOL(canSendBrakeTempSymbol, s_input.brake_temp, BRAKES_HOT, 25, 6)
+DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFl, s_input.tires.fl_deflated, LOW_TIRE_PRESSURE_FRONT_LEFT, 25, 7)
+DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFr, s_input.tires.fr_deflated, LOW_TIRE_PRESSURE_FRONT_RIGHT, 25, 8)
+DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRl, s_input.tires.rl_deflated, LOW_TIRE_PRESSURE_REAR_LEFT, 25, 9)
+DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRr, s_input.tires.rr_deflated, LOW_TIRE_PRESSURE_REAR_RIGHT, 25, 10)
+DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedAll, s_input.tires.all_deflated, LOW_TIRE_PRESSURE_ALL, 25, 11)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -756,6 +790,11 @@ int main() {
                 queuePush(canSendBatteryWarningSymbol);
                 queuePush(canSendCustomSymbol);
                 queuePush(canSendBrakeTempSymbol);
+                queuePush(canSendTireDeflatedFl);
+                queuePush(canSendTireDeflatedFr);
+                queuePush(canSendTireDeflatedRl);
+                queuePush(canSendTireDeflatedRr);
+                queuePush(canSendTireDeflatedAll);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {

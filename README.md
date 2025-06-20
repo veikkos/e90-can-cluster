@@ -83,7 +83,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 The cluster can be controlled over the virtual serial port using a simple text-based API. Please note that the example has spaces for readability, but the actual messages should not have spaces. The baud rate is __921600__.
 
-`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTFTF 0680 1 \n`
+`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTFTFFFFF 0680 1 \n`
 
 Breakdown:
 
@@ -121,13 +121,17 @@ Breakdown:
 
     Gear extension: M (M = semi-automatic, S = sport mode, P = park, A = automatic, C = common)
 
-    Extra lights: TFTFTF
+    Extra lights: TFTFTFFFFF
         - 1st: Low beam headlights (backlight)
         - 2nd: ESC (Electronic Stability Control)
         - 3rd: Check engine light
         - 4th: Clutch temperature warning
         - 5th: Fog lights
         - 6th: High brake temperature
+        - 7th: Front left tire deflated
+        - 8th: Front right tire deflated
+        - 9th: Rear left tire deflated
+        - 10th: Rear right tire deflated
 
     Cruise speed: 0680 = 68.0 km/h
 
