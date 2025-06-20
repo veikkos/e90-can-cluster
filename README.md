@@ -40,6 +40,7 @@ The code is able to control following things on the cluster
     - High or very high engine temperature
     - High clutch temperature
     - High brake temperature
+    - Tire deflated (individual, all)
     - ... and more can (and will) be added
 - Water temperature
     - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
