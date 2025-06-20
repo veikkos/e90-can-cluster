@@ -194,15 +194,15 @@ static inline uint16_t parse_u8_2(const char* p) {
 }
 
 static inline uint16_t parse_u8_3(const char* p) {
-    return 100 * parse_digit(p[0]) + 10 * parse_digit(p[1]) + parse_digit(p[2]);
+    return 100 * parse_digit(p[0]) + parse_u8_2(p + 1);
 }
 
 static inline uint16_t parse_u8_4(const char* p) {
-    return 1000 * parse_digit(p[0]) + 100 * parse_digit(p[1]) + 10 * parse_digit(p[2]) + parse_digit(p[3]);
+    return 1000 * parse_digit(p[0]) + parse_u8_3(p + 1);
 }
 
 static inline uint16_t parse_u8_5(const char* p) {
-    return 10000 * parse_digit(p[0]) + 1000 * parse_digit(p[1]) + 100 * parse_digit(p[2]) + 10 * parse_digit(p[3]) + parse_digit(p[4]);
+    return 10000 * parse_digit(p[0]) + parse_u8_4(p + 1);
 }
 
 void parseTelemetryLine()
