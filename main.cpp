@@ -165,7 +165,10 @@ void pollSerial() {
     while (pc.readable()) {
         char c;
         if (pc.read(&c, 1)) {
-            if (c == '\n') {
+            if (rx_pos == 0 && c != 'S') {
+                // Waiting for the start character but received something else so
+                // ignore it
+            } else if (c == '\n') {
                 if (rx_pos < RX_BUF_SIZE - 1) {
                     rx_buf[rx_pos] = '\0';  // null-terminate
                     line_ready = true;
@@ -173,8 +176,6 @@ void pollSerial() {
                 rx_pos = 0;
             } else if (rx_pos < RX_BUF_SIZE - 1) {
                 rx_buf[rx_pos++] = c;
-            } else {
-                rx_pos = 0;  // overflow, discard
             }
         }
     }
