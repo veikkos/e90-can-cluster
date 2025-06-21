@@ -105,7 +105,8 @@ enum ErrorLightID : uint16_t {
     DTC_SYMBOL_ONLY = 357,
     GEARBOX_TEMP_YELLOW = 104,
     GEARBOX_TEMP_RED = 105,
-    BRAKES_HOT = 353
+    BRAKES_HOT = 353,
+    COOLANT_LOW = 166,
     // What's there on 400 and beyond...?
 };
 
@@ -146,6 +147,7 @@ struct SInput {
     bool check_engine = false;
     bool clutch_temp = false;
     bool brake_temp = false;
+    bool radiator_warn = false;
 
     struct {
         bool fl_deflated = false;
@@ -226,7 +228,7 @@ void parseTelemetryLine()
         return;
     }
 
-    if (strlen(rx_buf) < 68) {
+    if (strlen(rx_buf) < 69) {
         printf("[UART] Ignored short/incomplete line\r\n");
         return;
     }
@@ -341,10 +343,12 @@ void parseTelemetryLine()
         s_input.tires.rr_deflated = false;
     }
 
-    // Cruise speed: 63–66
-    s_input.cruise_speed = parse_u8_4(&rx_buf[63]) / 10;
+    s_input.radiator_warn = parse_bool(rx_buf[63]);
 
-    s_input.cruise_enabled = rx_buf[67] == '1';
+    // Cruise speed: 64–67
+    s_input.cruise_speed = parse_u8_4(&rx_buf[64]) / 10;
+
+    s_input.cruise_enabled = rx_buf[68] == '1';
 
     led1 = !led1;
 }
@@ -649,6 +653,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFr, s_input.tires.fr_deflated, LOW_TIR
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRl, s_input.tires.rl_deflated, LOW_TIRE_PRESSURE_REAR_LEFT, 25, 9)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRr, s_input.tires.rr_deflated, LOW_TIRE_PRESSURE_REAR_RIGHT, 25, 10)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedAll, s_input.tires.all_deflated, LOW_TIRE_PRESSURE_ALL, 25, 11)
+DEFINE_CAN_SEND_SYMBOL(canSendRadiatorSymbol, s_input.radiator_warn, COOLANT_LOW, 25, 12)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -795,6 +800,7 @@ int main() {
                 queuePush(canSendTireDeflatedRl);
                 queuePush(canSendTireDeflatedRr);
                 queuePush(canSendTireDeflatedAll);
+                queuePush(canSendRadiatorSymbol);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {

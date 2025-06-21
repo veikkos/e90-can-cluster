@@ -41,6 +41,7 @@ The code is able to control following things on the cluster
     - High clutch temperature
     - High brake temperature
     - Tire deflated (individual, all)
+    - Radiator warning
     - ... and more can (and will) be added
 - Water temperature
     - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
@@ -84,7 +85,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 The cluster can be controlled over the virtual serial port using a simple text-based API. Please note that the example has spaces for readability, but the actual messages should not have spaces. The baud rate is __921600__.
 
-`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTFTFFFFF 0680 1 \n`
+`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTFTFFFFFT 0680 1 \n`
 
 Breakdown:
 
@@ -122,7 +123,7 @@ Breakdown:
 
     Gear extension: M (M = semi-automatic, S = sport mode, P = park, A = automatic, C = common)
 
-    Extra lights: TFTFTFFFFF
+    Extra lights: TFTFTFFFFFT
         - 1st: Low beam headlights (backlight)
         - 2nd: ESC (Electronic Stability Control)
         - 3rd: Check engine light
@@ -133,6 +134,7 @@ Breakdown:
         - 8th: Front right tire deflated
         - 9th: Rear left tire deflated
         - 10th: Rear right tire deflated
+        - 11th: Radiator warning
 
     Cruise speed: 0680 = 68.0 km/h
 
