@@ -170,13 +170,17 @@ SInput s_input;
 char rx_buf[RX_BUF_SIZE];
 volatile size_t rx_pos = 0;
 volatile bool line_ready = false;
+volatile bool serial_irq_pending = false;
 
-void pollSerial() {
+void serialIrQ() {
+    serial_irq_pending = true;
+    led3 = !led3;
+}
+
+void readSerial() {
     while (pc.readable()) {
         char c;
         if (pc.read(&c, 1)) {
-            led3 = !led3;
-
             if (rx_pos == 0 && c != 'S') {
                 // Waiting for the start character but received something else so
                 // ignore it
@@ -745,6 +749,7 @@ inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail]
 inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
 int main() {
+    pc.sigio(serialIrQ);
     canTimer.start();
 
     while (true) {
@@ -834,7 +839,10 @@ int main() {
             }
         }
 
-        pollSerial();
-        parseTelemetryLine();
+        if (serial_irq_pending) {
+            serial_irq_pending = false;
+            readSerial();
+            parseTelemetryLine();
+        }
     }
 }
