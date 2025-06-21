@@ -175,6 +175,8 @@ void pollSerial() {
     while (pc.readable()) {
         char c;
         if (pc.read(&c, 1)) {
+            led3 = !led3;
+
             if (rx_pos == 0 && c != 'S') {
                 // Waiting for the start character but received something else so
                 // ignore it
@@ -738,13 +740,7 @@ int queueHead = 0;
 int queueTail = 0;
 
 inline bool queueIsEmpty() { return queueHead == queueTail; }
-inline bool queueIsFull() {
-    bool isFull = ((queueTail + 1) % MaxQueueSize) == queueHead;
-    if (isFull) {
-        led3 = true;
-    }
-    return isFull;
-}
+inline bool queueIsFull() { return ((queueTail + 1) % MaxQueueSize) == queueHead; }
 inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
 inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
