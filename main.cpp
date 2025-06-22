@@ -59,6 +59,13 @@ enum GEAR_MODE {
     SPORT
 };
 
+enum IGNITION_STATE {
+    IG_OFF = 0,
+    IG_ACCESSORY = 1,
+    IG_ON = 2,
+    IG_STARTER = 3
+};
+
 enum ErrorLightID : uint16_t {
     BOOT_OPEN = 19,
     FIX_CAR = 21,
@@ -112,7 +119,7 @@ enum ErrorLightID : uint16_t {
 
 // Vehicle state structure
 struct SInput {
-    bool ignition = true;
+    IGNITION_STATE ignition = IG_OFF;
     INDICATOR indicator_state = I_OFF;
 
     uint16_t time_year = 2010;
@@ -286,7 +293,6 @@ void parseTelemetryLine() {
     s_input.radiator_warn      = flags & (1 << 22);
     s_input.engine_temp_yellow = flags & (1 << 23);
     s_input.engine_temp_red    = flags & (1 << 24);
-    s_input.ignition           = flags & (1 << 25);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -294,6 +300,8 @@ void parseTelemetryLine() {
     uint8_t gearMode         = p[idx++];
     s_input.cruise_speed     = parse_u16(&p[idx]) / 10; idx += 2;
     s_input.cruise_enabled   = p[idx++] != 0;
+
+    s_input.ignition         = (IGNITION_STATE)p[idx++];
 
     // Gear logic
     if (gearMode == 'P') {
@@ -344,8 +352,22 @@ bool engineIsRunning() {
 void canSendIgnitionFrame() {
     const uint32_t ID = 0x130;
     static uint8_t counter_on = 0xE2;
-    uint8_t byte0 = engineIsRunning()
-        ? 0x45 : (s_input.ignition ? 0x41 : 0x00); // Maybe 0x55 when ignition enabled?
+    static uint8_t byte0 = 0x00;
+
+    if (engineIsRunning()) {
+        byte0 = 0x45;
+    } else if (s_input.ignition == IG_STARTER) {
+        if (byte0 != 0x40 && byte0 != 0x55) {
+            byte0 = 0x40;
+        } else {
+            byte0 = 0x55;
+        }
+    } else if (s_input.ignition >= IG_ACCESSORY) {
+        byte0 = 0x41;
+    } else {
+        byte0 = 0x00;
+    }
+
     uint8_t data[8] = {byte0, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
     sendCAN(ID, data);
 }
@@ -625,7 +647,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendEngineTempRedSymbol, s_input.engine_temp_red, OVER
 DEFINE_CAN_SEND_SYMBOL(canSendCheckEngineSymbol, s_input.check_engine, CHECK_ENGINE_DOUBLE, 25, 2)
 DEFINE_CAN_SEND_SYMBOL(canSendClutchTempSymbol, s_input.clutch_temp, GEARBOX_TEMP_YELLOW, 25, 3)
 DEFINE_CAN_SEND_SYMBOL(canSendOilWarningSymbol, s_input.oil_warn, OIL_RED, 25, 4)
-DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn && s_input.ignition, BATTERY_RED, 25, 5)
+DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn && s_input.ignition >= IG_ON, BATTERY_RED, 25, 5)
 DEFINE_CAN_SEND_SYMBOL(canSendBrakeTempSymbol, s_input.brake_temp, BRAKES_HOT, 25, 6)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFl, s_input.tires.fl_deflated, LOW_TIRE_PRESSURE_FRONT_LEFT, 25, 7)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFr, s_input.tires.fr_deflated, LOW_TIRE_PRESSURE_FRONT_RIGHT, 25, 8)
