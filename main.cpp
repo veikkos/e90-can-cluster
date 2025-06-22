@@ -336,10 +336,16 @@ void sendCAN(uint32_t id, const uint8_t* data) {
     eventsSentThisSecond++;
 }
 
+bool engineIsRunning() {
+    return s_input.rpm > 100;
+}
+
 void canSendIgnitionFrame() {
-    static uint8_t counter_on = 0xE2;
     const uint32_t ID = 0x130;
-    uint8_t data[8] = {0x45, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
+    static uint8_t counter_on = 0xE2;
+    uint8_t byte0 = engineIsRunning()
+        ? 0x45 : (s_input.ignition ? 0x41 : 0x00);
+    uint8_t data[8] = {byte0, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
     sendCAN(ID, data);
 }
 
@@ -440,7 +446,7 @@ void canSendAbs() {
 void canSendEngineTempAndFuelInjection() {
     const uint32_t ID = 0x1D0;
     static uint8_t frame[8] = {0x8B, 0xFF, 0x00, 0xCD, 0x00, 0x00, 0xCD, 0xA8};
-    const uint8_t engine_run_state = s_input.rpm > 100 ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
+    const uint8_t engine_run_state = engineIsRunning() ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
     static uint16_t fuel_injection_total = 0;
 
     frame[0] = s_input.water_temp + 48;
