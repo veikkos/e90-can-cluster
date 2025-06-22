@@ -253,7 +253,7 @@ void parseTelemetryLine()
     s_input.rpm = parse_u8_5(&rx_buf[15]);
 
     // Speed: 20–23
-    s_input.speed = parse_u8_4(&rx_buf[20]) / 10;
+    s_input.speed = parse_u8_4(&rx_buf[20]);
 
     // Gear: 24
     uint8_t gear = parse_digit(rx_buf[24]);
@@ -386,8 +386,8 @@ void canSendRPM() {
     sendCAN(ID, data);
 }
 
-inline uint16_t kmhToMph(uint16_t kmh, int correction) {
-    return (min((int)kmh, 260) * (620 + correction) + 500) / 1000;
+inline uint16_t kmhx10ToMph(uint16_t kmh_x10, int correction) {
+    return (min((int)kmh_x10, 2600) * (620 + correction) + 5000) / 10000;
 }
 
 void canSendSpeed() {
@@ -396,7 +396,7 @@ void canSendSpeed() {
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
     const int calibration = 30; // This value is empirically set so the speed matches on this particular cluster
-    uint16_t speed_mph = kmhToMph(s_input.speed, calibration);
+    uint16_t speed_mph = kmhx10ToMph(s_input.speed, calibration);
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
