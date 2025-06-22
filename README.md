@@ -135,6 +135,7 @@ Bit 21 : DL_TIREFLAT_RR   (Rear right tire deflated)
 Bit 22 : DL_RADIATOR      (Radiator warning)
 Bit 23 : DL_ENGINETEMP_Y  (Engine temp yellow)
 Bit 24 : DL_ENGINETEMP_R  (Engine temp red)
+Bit 25 : DL_IGNITION      (Ignition)
 ```
 
 ## Serial CAN bus adapter settings
