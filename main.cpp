@@ -182,126 +182,119 @@ void readSerial() {
         char c;
         if (pc.read(&c, 1)) {
             if (rx_pos == 0 && c != 'S') {
-                // Waiting for the start character but received something else so
-                // ignore it
-            } else if (c == '\n') {
-                if (rx_pos < RX_BUF_SIZE - 1) {
-                    rx_buf[rx_pos] = '\0';  // null-terminate
-                    line_ready = true;
-                }
-                rx_pos = 0;
+                // Waiting for the start character but received something else so ignore it
             } else if (rx_pos < RX_BUF_SIZE - 1) {
-                rx_buf[rx_pos++] = c;
+                if (c == 'E') {
+                    rx_buf[rx_pos] = c;
+                    line_ready = true;
+                    rx_pos = 0;
+                } else {
+                    rx_buf[rx_pos++] = c;
+                }
             } else {
-                // Never reached the end of the package so start over
+                // Buffer overflow or bad frame, reset
                 rx_pos = 0;
             }
         }
     }
 }
 
-static inline uint8_t parse_digit(char c) {
-    return c - '0';
+static inline uint16_t parse_u16(const uint8_t* p) {
+    return p[0] | (p[1] << 8);
 }
 
-static inline bool parse_bool(char c) {
-    return c == 'T';
+static inline uint32_t parse_u32(const uint8_t* p) {
+    return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 }
 
-static inline uint16_t parse_u8_2(const char* p) {
-    return 10 * parse_digit(p[0]) + parse_digit(p[1]);
-}
-
-static inline uint16_t parse_u8_3(const char* p) {
-    return 100 * parse_digit(p[0]) + parse_u8_2(p + 1);
-}
-
-static inline uint16_t parse_u8_4(const char* p) {
-    return 1000 * parse_digit(p[0]) + parse_u8_3(p + 1);
-}
-
-static inline uint16_t parse_u8_5(const char* p) {
-    return 10000 * parse_digit(p[0]) + parse_u8_4(p + 1);
-}
-
-void parseTelemetryLine()
-{
+void parseTelemetryLine() {
     if (!line_ready) return;
     line_ready = false;
 
-    if (rx_buf[0] != 'S') {
-        printf("[UART] Ignored line without 'S' start\r\n");
+    const uint8_t* p = (const uint8_t*)rx_buf;
+
+    if (p[0] != 'S') {
+        printf("[UART] Invalid frame markers\n");
         return;
     }
 
-    if (strlen(rx_buf) < 69) {
-        printf("[UART] Ignored short/incomplete line\r\n");
-        return;
-    }
+    int idx = 1; // skip 'S'
 
-    char buf[8];
+    // Timestamp
+    s_input.time_year   = parse_u16(&p[idx]); idx += 2;
+    s_input.time_month  = p[idx++];
+    s_input.time_day    = p[idx++];
+    s_input.time_hour   = p[idx++];
+    s_input.time_minute = p[idx++];
+    s_input.time_second = p[idx++];
 
-    // Timestamp (1–13)
-    s_input.time_year   = parse_u8_4(&rx_buf[1]);
-    s_input.time_month  = parse_u8_2(&rx_buf[5]);
-    s_input.time_day    = parse_u8_2(&rx_buf[7]);
-    s_input.time_hour   = parse_u8_2(&rx_buf[9]);
-    s_input.time_minute = parse_u8_2(&rx_buf[11]);
-    s_input.time_second = parse_u8_2(&rx_buf[13]);
+    s_input.rpm         = parse_u16(&p[idx]); idx += 2;
+    s_input.speed       = parse_u16(&p[idx]); idx += 2;
 
-    // RPM: 15–19
-    s_input.rpm = parse_u8_5(&rx_buf[15]);
+    uint8_t gear        = p[idx++];
+    s_input.water_temp  = p[idx++];
+    s_input.fuel        = parse_u16(&p[idx]); idx += 2;
 
-    // Speed: 20–23
-    s_input.speed = parse_u8_4(&rx_buf[20]);
+    uint32_t flags      = parse_u32(&p[idx]); idx += 4;
 
-    // Gear: 24
-    uint8_t gear = parse_digit(rx_buf[24]);
+    // Parse flags using bitmasks
+    s_input.light_shift      = flags & (1 << 0);
+    s_input.light_highbeam   = flags & (1 << 1);
+    s_input.handbrake        = flags & (1 << 2);
+    s_input.light_tc         = flags & (1 << 4);
 
-    // Temp: 25–27
-    s_input.water_temp = parse_u8_3(&rx_buf[25]);
+    bool left_signal  = flags & (1 << 5);
+    bool right_signal = flags & (1 << 6);
 
-    // Fuel: 28–31
-    s_input.fuel = parse_u8_4(&rx_buf[28]);
-
-    // Dash flags: 32–40 (T/F)
-    s_input.light_shift      = parse_bool(rx_buf[32]);
-    s_input.light_highbeam   = parse_bool(rx_buf[33]);
-    s_input.handbrake        = parse_bool(rx_buf[34]);
-    s_input.light_tc         = parse_bool(rx_buf[35]);
-
-    bool left_signal  = parse_bool(rx_buf[36]);
-    bool right_signal = parse_bool(rx_buf[37]);
-
-    if (left_signal && right_signal) {
+    if (left_signal && right_signal)
         s_input.indicator_state = I_HAZZARD;
-    } else if (left_signal) {
+    else if (left_signal)
         s_input.indicator_state = I_LEFT;
-    } else if (right_signal) {
+    else if (right_signal)
         s_input.indicator_state = I_RIGHT;
-    } else {
+    else
         s_input.indicator_state = I_OFF;
+
+    s_input.oil_warn           = flags & (1 << 8);
+    s_input.battery_warn       = flags & (1 << 9);
+    s_input.abs_warn           = flags & (1 << 10);
+    s_input.light_lowbeam      = flags & (1 << 12);
+    s_input.light_esc          = flags & (1 << 13);
+    s_input.check_engine       = flags & (1 << 14);
+    s_input.clutch_temp        = flags & (1 << 15);
+    s_input.light_fog          = flags & (1 << 16);
+    s_input.brake_temp         = flags & (1 << 17);
+
+    s_input.tires.fl_deflated = flags & (1 << 18);
+    s_input.tires.fr_deflated = flags & (1 << 19);
+    s_input.tires.rl_deflated = flags & (1 << 20);
+    s_input.tires.rr_deflated = flags & (1 << 21);
+
+    bool all_deflated = s_input.tires.fl_deflated &&
+                        s_input.tires.fr_deflated &&
+                        s_input.tires.rl_deflated &&
+                        s_input.tires.rr_deflated;
+
+    s_input.tires.all_deflated = all_deflated;
+    if (all_deflated) {
+        s_input.tires.fl_deflated = false;
+        s_input.tires.fr_deflated = false;
+        s_input.tires.rl_deflated = false;
+        s_input.tires.rr_deflated = false;
     }
 
-    s_input.oil_warn           = parse_bool(rx_buf[38]);
-    s_input.battery_warn       = parse_bool(rx_buf[39]);
-    s_input.abs_warn           = parse_bool(rx_buf[40]);
-    s_input.engine_temp_yellow = parse_bool(rx_buf[41]);
-    s_input.engine_temp_red    = parse_bool(rx_buf[42]);
+    s_input.radiator_warn      = flags & (1 << 22);
+    s_input.engine_temp_yellow = flags & (1 << 23);
+    s_input.engine_temp_red    = flags & (1 << 24);
 
-    // Fuel injection amount: 43–46
-    s_input.fuel_injection = parse_u8_4(&rx_buf[43]);
+    s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
+    s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
+    s_input.custom_light_on  = p[idx++] != 0;
+    uint8_t gearMode         = p[idx++];
+    s_input.cruise_speed     = parse_u16(&p[idx]) / 10; idx += 2;
+    s_input.cruise_enabled   = p[idx++] != 0;
 
-    // Custom light: 47–50
-    s_input.custom_light = parse_u8_4(&rx_buf[47]);
-
-    // Custom light on: 51
-    s_input.custom_light_on = parse_bool(rx_buf[51]);
-
-    // Gear mode: 52
-    uint8_t gearMode = rx_buf[52];
-
-    // Set gear variables
+    // Gear logic
     if (gearMode == 'P') {
         s_input.manualGear = NONE;
         s_input.currentGear = PARK;
@@ -321,40 +314,13 @@ void parseTelemetryLine()
     } else {
         s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, 6));
         s_input.currentGear = DRIVE;
-        s_input.mode = gearMode == 'S' ? SPORT : NORMAL;
+        s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
 
-    s_input.light_lowbeam   = parse_bool(rx_buf[53]);
-    s_input.light_esc       = parse_bool(rx_buf[54]);
-    s_input.check_engine    = parse_bool(rx_buf[55]);
-    s_input.clutch_temp     = parse_bool(rx_buf[56]);
-    s_input.light_fog       = parse_bool(rx_buf[57]);
-    s_input.brake_temp      = parse_bool(rx_buf[58]);
-
-    s_input.tires.fl_deflated = parse_bool(rx_buf[59]);
-    s_input.tires.fr_deflated = parse_bool(rx_buf[60]);
-    s_input.tires.rl_deflated = parse_bool(rx_buf[61]);
-    s_input.tires.rr_deflated = parse_bool(rx_buf[62]);
-
-    bool all_deflated = s_input.tires.fl_deflated &&
-        s_input.tires.fr_deflated &&
-        s_input.tires.rl_deflated &&
-        s_input.tires.rr_deflated;
-    s_input.tires.all_deflated = all_deflated;
-
-    if (all_deflated) {
-        s_input.tires.fl_deflated = false;
-        s_input.tires.fr_deflated = false;
-        s_input.tires.rl_deflated = false;
-        s_input.tires.rr_deflated = false;
+    if (p[idx] != 'E') {
+        printf("[UART] Incorrect frame length\n");
     }
 
-    s_input.radiator_warn = parse_bool(rx_buf[63]);
-
-    // Cruise speed: 64–67
-    s_input.cruise_speed = parse_u8_4(&rx_buf[64]) / 10;
-
-    s_input.cruise_enabled = rx_buf[68] == '1';
 
     led1 = !led1;
 }

@@ -83,62 +83,59 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 ## The API
 
-The cluster can be controlled over the virtual serial port using a simple text-based API. Please note that the example has spaces for readability, but the actual messages should not have spaces. The baud rate is __921600__.
+The cluster is controlled over a virtual serial port using a compact **binary protocol**. The baud rate is **921600**. Framed starts with (`'S'`) and ends with (`'E'`) marker bytes.
 
-`S 20250619164530 02350 0853 3 095 0734 TFFTFTFTFFT 0087 0000T M TFTFTFFFFFT 0680 1 \n`
+### Frame Structure (Little Endian)
 
-Breakdown:
+| Offset | Size | Field               | Description                          |
+|--------|------|---------------------|--------------------------------------|
+| 0      | 1    | `'S'`               | Start marker                         |
+| 1      | 2    | `year`              | e.g., 2025                           |
+| 3      | 1    | `month`             | 1–12                                 |
+| 4      | 1    | `day`               | 1–31                                 |
+| 5      | 1    | `hour`              | 0–23                                 |
+| 6      | 1    | `minute`            | 0–59                                 |
+| 7      | 1    | `second`            | 0–59                                 |
+| 8      | 2    | `rpm`               | 0–65535                              |
+| 10     | 2    | `speed`             | km/h × 10 (e.g. 853 = 85.3 km/h)     |
+| 12     | 1    | `gear`              | 0 = R, 1 = N, 2+ = forward gears     |
+| 13     | 1    | `engine temp`       | °C                                   |
+| 14     | 2    | `fuel`              | 0–1000 (% × 10)                      |
+| 16     | 4    | `showlights`        | Bitfield of all light states (see table below) |
+| 20     | 2    | `fuel injection`    | microliters per 100 ms               |
+| 22     | 2    | `custom light`      | Symbol ID (0–65535)                  |
+| 24     | 1    | `custom light on`   | 1 = show, 0 = off                    |
+| 25     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
+| 26     | 2    | `cruise speed`      | km/h × 10                            |
+| 28     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
+| 29     | 1    | `'E'`               | End marker                           |
 
-    Start of the message: S
+### `showlights` Breakdown
 
-    Timestamp: 2025-06-19 16:45:30
-
-    RPM: 2350
-
-    Speed: 0853 = 85.3 km/h
-
-    Gear: 3 (2nd gear), Reverse is 0, Neutral is 1
-
-    Engine Temp: 095 = 95°C
-
-    Fuel: 0734 = 73.4% (0-1000)
-
-    Lights: TFFTFTFTFFT
-        - T = on, F = off
-        - 1st light: Shift indicator
-        - 2nd light: High beams
-        - 3rd light: Handbrake
-        - 4th light: Traction control
-        - 5th light: Left turn signal
-        - 6th light: Right turn signal
-        - 7th light: Oil warning
-        - 8th light: Battery warning
-        - 9th light: ABS
-        - 10th light: High engine temperature, yellow
-        - 11th light: High engine temperature, red
-
-    Fuek injection: 0087 = 8.7ul per 100 ms
-
-    Custom light: 0004T (Show symbol #4, 0004F to disable)
-
-    Gear extension: M (M = semi-automatic, S = sport mode, P = park, A = automatic, C = common)
-
-    Extra lights: TFTFTFFFFFT
-        - 1st: Low beam headlights (backlight)
-        - 2nd: ESC (Electronic Stability Control)
-        - 3rd: Check engine light
-        - 4th: Clutch temperature warning
-        - 5th: Fog lights
-        - 6th: High brake temperature
-        - 7th: Front left tire deflated
-        - 8th: Front right tire deflated
-        - 9th: Rear left tire deflated
-        - 10th: Rear right tire deflated
-        - 11th: Radiator warning
-
-    Cruise speed: 0680 = 68.0 km/h
-
-    Cruise mode: 1 (on), 0 (off)
+```
+Bit  0 : DL_SHIFT         (Shift light) UNUSED
+Bit  1 : DL_FULLBEAM      (Full beam headlights)
+Bit  2 : DL_HANDBRAKE     (Handbrake engaged)
+Bit  4 : DL_TC            (Traction control active/disabled)
+Bit  5 : DL_SIGNAL_L      (Left turn signal)
+Bit  6 : DL_SIGNAL_R      (Right turn signal)
+Bit  8 : DL_OILWARN       (Oil pressure warning)
+Bit  9 : DL_BATTERY       (Battery warning)
+Bit 10 : DL_ABS           (ABS active/disabled) UNUSED
+Bit 12 : DL_LOWBEAM       (Low beam headlights)
+Bit 13 : DL_ESC           (ESC active/disabled)
+Bit 14 : DL_CHECKENGINE   (Check engine light)
+Bit 15 : DL_CLUTCHTEMP    (Clutch temp warning)
+Bit 16 : DL_FOGLIGHTS     (Fog lights on)
+Bit 17 : DL_BRAKETEMP     (High brake temperature)
+Bit 18 : DL_TIREFLAT_FL   (Front left tire deflated)
+Bit 19 : DL_TIREFLAT_FR   (Front right tire deflated)
+Bit 20 : DL_TIREFLAT_RL   (Rear left tire deflated)
+Bit 21 : DL_TIREFLAT_RR   (Rear right tire deflated)
+Bit 22 : DL_RADIATOR      (Radiator warning)
+Bit 23 : DL_ENGINETEMP_Y  (Engine temp yellow)
+Bit 24 : DL_ENGINETEMP_R  (Engine temp red)
+```
 
 ## Serial CAN bus adapter settings
 
