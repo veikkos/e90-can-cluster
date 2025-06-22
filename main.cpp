@@ -345,7 +345,7 @@ void canSendIgnitionFrame() {
     const uint32_t ID = 0x130;
     static uint8_t counter_on = 0xE2;
     uint8_t byte0 = engineIsRunning()
-        ? 0x45 : (s_input.ignition ? 0x41 : 0x00);
+        ? 0x45 : (s_input.ignition ? 0x41 : 0x00); // Maybe 0x55 when ignition enabled?
     uint8_t data[8] = {byte0, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
     sendCAN(ID, data);
 }
