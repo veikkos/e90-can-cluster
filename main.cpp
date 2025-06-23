@@ -114,10 +114,7 @@ enum ErrorLightID : uint16_t {
     GEARBOX_TEMP_RED = 105,
     BRAKES_HOT = 353,
     COOLANT_LOW = 166,
-    DOOR_OPEN_FRONT_LEFT = 15,
-    DOOR_OPEN_REAR_RIGHT = 17,
-    DOOR_OPEN_REAR_LEFT = 16,
-    DOOR_OPEN_FRONT_RIGHT = 14,
+    CAR_CAN_ROLL = 302,
     // What's there on 400 and beyond...?
 };
 
@@ -680,6 +677,10 @@ void canSendGearboxData() {
         }                                                                            \
     }
 
+bool shouldShowDoorOpenWarning() {
+    return s_input.currentGear != PARK;
+}
+
 // Interval = 200 ms
 DEFINE_CAN_SEND_SYMBOL(canSendEngineTempYellowSymbol, s_input.engine_temp_yellow && !s_input.engine_temp_red, OVERHEAT_YELLOW, 25, 0)
 DEFINE_CAN_SEND_SYMBOL(canSendEngineTempRedSymbol, s_input.engine_temp_red, OVERHEAT_RED, 25, 1)
@@ -694,6 +695,10 @@ DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRl, s_input.tires.rl_deflated, LOW_TIR
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRr, s_input.tires.rr_deflated, LOW_TIRE_PRESSURE_REAR_RIGHT, 25, 10)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedAll, s_input.tires.all_deflated, LOW_TIRE_PRESSURE_ALL, 25, 11)
 DEFINE_CAN_SEND_SYMBOL(canSendRadiatorSymbol, s_input.radiator_warn, COOLANT_LOW, 25, 12)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenFl, s_input.doors.fl_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 13)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenFr, s_input.doors.fr_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 14)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRl, s_input.doors.rl_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 15)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRr, s_input.doors.rr_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 16)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -836,6 +841,10 @@ int main() {
                 queuePush(canSendTireDeflatedRr);
                 queuePush(canSendTireDeflatedAll);
                 queuePush(canSendRadiatorSymbol);
+                queuePush(canSendDoorOpenFl);
+                queuePush(canSendDoorOpenFr);
+                queuePush(canSendDoorOpenRl);
+                queuePush(canSendDoorOpenRr);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
