@@ -114,6 +114,10 @@ enum ErrorLightID : uint16_t {
     GEARBOX_TEMP_RED = 105,
     BRAKES_HOT = 353,
     COOLANT_LOW = 166,
+    DOOR_OPEN_FRONT_LEFT = 15,
+    DOOR_OPEN_REAR_RIGHT = 17,
+    DOOR_OPEN_REAR_LEFT = 16,
+    DOOR_OPEN_FRONT_RIGHT = 14,
     // What's there on 400 and beyond...?
 };
 
@@ -164,6 +168,13 @@ struct SInput {
         bool rr_deflated = false;
         bool all_deflated = false;
     } tires;
+
+    struct {
+        bool fl_open = false;
+        bool fr_open = false;
+        bool rl_open = false;
+        bool rr_open = false;
+    } doors;
 
     bool handbrake = false;
 
@@ -294,6 +305,12 @@ void parseTelemetryLine() {
     s_input.radiator_warn      = flags & (1 << 22);
     s_input.engine_temp_yellow = flags & (1 << 23);
     s_input.engine_temp_red    = flags & (1 << 24);
+
+    // Not yet used
+    s_input.doors.fl_open = flags & (1 << 25);
+    s_input.doors.fr_open = flags & (1 << 26);
+    s_input.doors.rl_open = flags & (1 << 27);
+    s_input.doors.rr_open = flags & (1 << 28);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
