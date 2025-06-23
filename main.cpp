@@ -501,18 +501,51 @@ void canSendAirbagCounter() {
     frame[0]++;
 }
 
+typedef struct {
+    float fuel_percent;  // 1.0 = 100%, 0.75 = 75%, etc.
+    uint16_t meter_level; // Value to send to the cluster
+} FuelLevelPoint;
+
+// This is bit heavy floating point calculation but fine by now
+static uint16_t interpolateFuel(float percent) {
+    FuelLevelPoint table[] = {
+        {1.00f, 8100},
+        {0.75f, 5150},
+        {0.50f, 3450},
+        {0.25f, 2050},
+        {0.00f,  500}
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        if (percent >= table[i + 1].fuel_percent) {
+            float range = table[i].fuel_percent - table[i + 1].fuel_percent;
+            float alpha = (percent - table[i + 1].fuel_percent) / range;
+            return (uint16_t)(table[i + 1].meter_level +
+                              alpha * (table[i].meter_level - table[i + 1].meter_level));
+        }
+    }
+
+    return table[4].meter_level; // fallback for <0%
+}
+
 void canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
-    static int max_level = 8100;
 
-    // The level is not linear so improve this later
-    uint16_t level = 100 + min((max_level * (int)s_input.fuel) / 1000, max_level);
+    float fuel = (float)s_input.fuel / 1000.f;
+    if (fuel > 1.0f) fuel = 1.0f;
+    if (fuel < 0.0f) fuel = 0.0f;
+
+    // Fuel gauge is not linear so match it here
+    uint16_t level = interpolateFuel(fuel);
+
     frame[0] = level & 0xFF;
     frame[1] = (level >> 8);
+
     // There are two sensors so duplicate the value
     frame[2] = frame[0];
     frame[3] = frame[1];
+
     sendCAN(ID, frame);
 }
 
