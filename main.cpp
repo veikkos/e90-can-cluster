@@ -232,7 +232,7 @@ void parseTelemetryLine() {
 
     const uint8_t* p = (const uint8_t*)rx_buf;
 
-    if (p[0] != 'S') {
+    if (p[0] != 'S' || p[31] != 'E') {
         printf("[UART] Invalid frame markers\n");
         return;
     }
@@ -344,11 +344,6 @@ void parseTelemetryLine() {
         s_input.currentGear = DRIVE;
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
-
-    if (p[idx] != 'E') {
-        printf("[UART] Incorrect frame length\n");
-    }
-
 
     led1 = !led1;
 }
