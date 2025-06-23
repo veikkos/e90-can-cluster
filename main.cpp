@@ -155,6 +155,7 @@ struct SInput {
     bool clutch_temp = false;
     bool brake_temp = false;
     bool radiator_warn = false;
+    bool engine_running = false;
 
     struct {
         bool fl_deflated = false;
@@ -302,6 +303,7 @@ void parseTelemetryLine() {
     s_input.cruise_enabled   = p[idx++] != 0;
 
     s_input.ignition         = (IGNITION_STATE)p[idx++];
+    s_input.engine_running   = p[idx++] != 0;
 
     // Gear logic
     if (gearMode == 'P') {
@@ -345,16 +347,12 @@ void sendCAN(uint32_t id, const uint8_t* data) {
     eventsSentThisSecond++;
 }
 
-bool engineIsRunning() {
-    return s_input.rpm > 100;
-}
-
 void canSendIgnitionFrame() {
     const uint32_t ID = 0x130;
     static uint8_t counter_on = 0xE2;
     static uint8_t byte0 = 0x00;
 
-    if (engineIsRunning()) {
+    if (s_input.engine_running) {
         byte0 = 0x45;
     } else if (s_input.ignition >= IG_ON) {
        byte0 = 0x55;
@@ -465,7 +463,7 @@ void canSendAbs() {
 void canSendEngineTempAndFuelInjection() {
     const uint32_t ID = 0x1D0;
     static uint8_t frame[8] = {0x8B, 0xFF, 0x00, 0xCD, 0x00, 0x00, 0xCD, 0xA8};
-    const uint8_t engine_run_state = engineIsRunning() ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
+    const uint8_t engine_run_state = s_input.engine_running ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
     static uint16_t fuel_injection_total = 0;
 
     frame[0] = s_input.water_temp + 48;
