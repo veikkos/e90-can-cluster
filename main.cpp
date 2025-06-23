@@ -748,7 +748,7 @@ void canSendCruiseControl() {
     static uint8_t last_kmh = 0xFE;
     static bool last_enabled = false;
 
-    uint8_t kmh = s_input.cruise_enabled ? s_input.cruise_speed : 0xFE;
+    uint8_t kmh = s_input.cruise_enabled ? min(s_input.cruise_speed, (uint16_t)250) : 0xFE;
     uint8_t cruise_status = s_input.cruise_enabled ? 0xF4 : 0xF1; // 0xF5 for mph!
     uint8_t cc_flag = s_input.cruise_enabled ? 0x58 : 0x50;
     uint8_t speed_update = (kmh != last_kmh || s_input.cruise_enabled != last_enabled) ? 0x01 : 0x00;
