@@ -628,7 +628,7 @@ void canSendGearboxData() {
     void fn_name() {                                                                 \
         static bool last_value = false;                                              \
         static uint8_t counter = offset;                                             \
-        bool value = (signal_expr);                                                  \
+        bool value = (signal_expr) && (s_input.ignition >= IG_ON);                   \
         counter++;                                                                   \
         if (value != last_value || (counter % (interval) == 0)) {                    \
             last_value = value;                                                      \
@@ -643,7 +643,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendEngineTempRedSymbol, s_input.engine_temp_red, OVER
 DEFINE_CAN_SEND_SYMBOL(canSendCheckEngineSymbol, s_input.check_engine, CHECK_ENGINE_DOUBLE, 25, 2)
 DEFINE_CAN_SEND_SYMBOL(canSendClutchTempSymbol, s_input.clutch_temp, GEARBOX_TEMP_YELLOW, 25, 3)
 DEFINE_CAN_SEND_SYMBOL(canSendOilWarningSymbol, s_input.oil_warn, OIL_RED, 25, 4)
-DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn && s_input.ignition >= IG_ON, BATTERY_RED, 25, 5)
+DEFINE_CAN_SEND_SYMBOL(canSendBatteryWarningSymbol, s_input.battery_warn , BATTERY_RED, 25, 5)
 DEFINE_CAN_SEND_SYMBOL(canSendBrakeTempSymbol, s_input.brake_temp, BRAKES_HOT, 25, 6)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFl, s_input.tires.fl_deflated, LOW_TIRE_PRESSURE_FRONT_LEFT, 25, 7)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedFr, s_input.tires.fr_deflated, LOW_TIRE_PRESSURE_FRONT_RIGHT, 25, 8)
