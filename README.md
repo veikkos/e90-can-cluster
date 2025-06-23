@@ -108,7 +108,9 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 25     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
 | 26     | 2    | `cruise speed`      | km/h × 10                            |
 | 28     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
-| 29     | 1    | `'E'`               | End marker                           |
+| 29     | 1    | `ignition`          | 1 = on, 0 = off                      |
+| 30     | 1    | `engine running`    | 3 = starter, 2 = on, 1 = accessory only, 0 = off                      |
+| 31     | 1    | `'E'`               | End marker                           |
 
 ### `showlights` Breakdown
 
@@ -135,7 +137,11 @@ Bit 21 : DL_TIREFLAT_RR   (Rear right tire deflated)
 Bit 22 : DL_RADIATOR      (Radiator warning)
 Bit 23 : DL_ENGINETEMP_Y  (Engine temp yellow)
 Bit 24 : DL_ENGINETEMP_R  (Engine temp red)
-Bit 25 : DL_IGNITION      (Ignition)
+Bit 25 : DL_DOOROPEN_FL   (Front left door open)
+Bit 26 : DL_DOOROPEN_FR   (Front right door open)
+Bit 27 : DL_DOOROPEN_RL   (Rear left door open)
+Bit 28 : DL_DOOROPEN_RR   (Rear right door open)
+Bit 29 : DL_TAILGATEOPEN  (Tailgate open)
 ```
 
 ## Serial CAN bus adapter settings

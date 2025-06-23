@@ -171,6 +171,7 @@ struct SInput {
         bool fr_open = false;
         bool rl_open = false;
         bool rr_open = false;
+        bool tailgate_open = false;
     } doors;
 
     bool handbrake = false;
@@ -308,6 +309,7 @@ void parseTelemetryLine() {
     s_input.doors.fr_open = flags & (1 << 26);
     s_input.doors.rl_open = flags & (1 << 27);
     s_input.doors.rr_open = flags & (1 << 28);
+    s_input.doors.tailgate_open = flags & (1 << 29);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -678,7 +680,12 @@ void canSendGearboxData() {
     }
 
 bool shouldShowDoorOpenWarning() {
-    return s_input.currentGear != PARK;
+    return s_input.currentGear != PARK && (
+        s_input.doors.fl_open ||
+        s_input.doors.fr_open ||
+        s_input.doors.rl_open ||
+        s_input.doors.rr_open
+    );
 }
 
 // Interval = 200 ms
@@ -695,10 +702,8 @@ DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRl, s_input.tires.rl_deflated, LOW_TIR
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRr, s_input.tires.rr_deflated, LOW_TIRE_PRESSURE_REAR_RIGHT, 25, 10)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedAll, s_input.tires.all_deflated, LOW_TIRE_PRESSURE_ALL, 25, 11)
 DEFINE_CAN_SEND_SYMBOL(canSendRadiatorSymbol, s_input.radiator_warn, COOLANT_LOW, 25, 12)
-DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenFl, s_input.doors.fl_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 13)
-DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenFr, s_input.doors.fr_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 14)
-DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRl, s_input.doors.rl_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 15)
-DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRr, s_input.doors.rr_open && shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 16)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpen, shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 13)
+DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 14)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -841,10 +846,8 @@ int main() {
                 queuePush(canSendTireDeflatedRr);
                 queuePush(canSendTireDeflatedAll);
                 queuePush(canSendRadiatorSymbol);
-                queuePush(canSendDoorOpenFl);
-                queuePush(canSendDoorOpenFr);
-                queuePush(canSendDoorOpenRl);
-                queuePush(canSendDoorOpenRr);
+                queuePush(canSendDoorOpen);
+                queuePush(canSendTailgateOpen);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
