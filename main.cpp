@@ -356,13 +356,9 @@ void canSendIgnitionFrame() {
 
     if (engineIsRunning()) {
         byte0 = 0x45;
-    } else if (s_input.ignition == IG_STARTER) {
-        if (byte0 != 0x40 && byte0 != 0x55) {
-            byte0 = 0x40;
-        } else {
-            byte0 = 0x55;
-        }
-    } else if (s_input.ignition >= IG_ACCESSORY) {
+    } else if (s_input.ignition >= IG_ON) {
+       byte0 = 0x55;
+    } else if (s_input.ignition == IG_ACCESSORY) {
         byte0 = 0x41;
     } else {
         byte0 = 0x00;
