@@ -510,6 +510,43 @@ void canSendAirbagCounter() {
     frame[0]++;
 }
 
+// This function is not fully verified but the presence of it makes the average speed and average fuel consumption work. See
+// https://github.com/HeinrichG-V12/E65_ReverseEngineering/blob/main/docs/0x1A0.md
+void canSendVehicleDynamics() {
+    const uint32_t ID = 0x1A0;
+    static uint8_t alive_counter = 0;
+
+    float speed_kmh = s_input.speed / 10.f;
+    // Moving forward, backward not supported yet
+    uint8_t st_veh_dvco = speed_kmh >= 1 ? 1 : 0;
+    float acc_long = 0.f;       // m/s²
+    float acc_lat  = 0.f;       // m/s²
+    float yaw_rate = 0.f;       // deg/s
+
+    uint16_t v_veh_raw = (uint16_t)(speed_kmh / 0.1f);
+    int16_t acc_long_raw = (int16_t)(acc_long / 0.025f);
+    int16_t acc_lat_raw  = (int16_t)(acc_lat  / 0.025f);
+    int16_t yaw_rate_raw = (int16_t)(yaw_rate / 0.05f);
+
+    uint8_t frame[8] = {0};
+
+    frame[0] = v_veh_raw & 0xFF;
+    frame[1] = (st_veh_dvco & 0x07) << 4;
+    frame[2] = acc_long_raw & 0xFF;
+    frame[3] = ((acc_long_raw >> 8) & 0x0F) | ((acc_lat_raw & 0x0F) << 4);
+    frame[4] = (acc_lat_raw >> 4) & 0xFF;
+    frame[5] = yaw_rate_raw & 0xFF;
+    frame[6] = ((yaw_rate_raw >> 8) & 0x0F) | ((alive_counter++ & 0x0F) << 4);
+
+    uint8_t checksum = 0x00;
+    for (int i = 0; i < 7; i++) {
+        checksum ^= frame[i];
+    }
+    frame[7] = checksum;
+
+    sendCAN(ID, frame);
+}
+
 typedef struct {
     float fuel_percent;  // 1.0 = 100%, 0.75 = 75%, etc.
     uint16_t meter_level; // Value to send to the cluster
@@ -812,6 +849,7 @@ int main() {
                 queuePush(canSendSteeringWheel);
                 queuePush(canSendDmeStatus);
                 queuePush(canSendCruiseControl);
+                queuePush(canSendVehicleDynamics);
             }
             // Send every 50 ms
             if (canCounter % 5 == 1) {
