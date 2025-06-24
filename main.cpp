@@ -558,7 +558,7 @@ typedef struct {
 // This is bit heavy floating point calculation but fine by now
 static uint16_t interpolateFuel(float percent) {
     FuelLevelPoint table[] = {
-        {1.00f, 8100},
+        {1.00f, 8150},
         {0.75f, 5150},
         {0.50f, 3450},
         {0.25f, 2050},
