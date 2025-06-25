@@ -115,6 +115,9 @@ enum ErrorLightID : uint16_t {
     BRAKES_HOT = 353,
     COOLANT_LOW = 166,
     CAR_CAN_ROLL = 302,
+    DOOR_OPEN_LEFT = 715,
+    DOOR_OPEN_RIGHT = 716,
+    DSC_OFF = 673,
     // What's there on 400 and beyond...?
 };
 
@@ -716,11 +719,16 @@ void canSendGearboxData() {
         }                                                                            \
     }
 
-bool shouldShowDoorOpenWarning() {
+bool shouldShowDoorOpenLeftWarning() {
     return s_input.currentGear != PARK && (
         s_input.doors.fl_open ||
+        s_input.doors.rl_open
+    );
+}
+
+bool shouldShowDoorOpenRightWarning() {
+    return s_input.currentGear != PARK && (
         s_input.doors.fr_open ||
-        s_input.doors.rl_open ||
         s_input.doors.rr_open
     );
 }
@@ -739,8 +747,9 @@ DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRl, s_input.tires.rl_deflated, LOW_TIR
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedRr, s_input.tires.rr_deflated, LOW_TIRE_PRESSURE_REAR_RIGHT, 25, 10)
 DEFINE_CAN_SEND_SYMBOL(canSendTireDeflatedAll, s_input.tires.all_deflated, LOW_TIRE_PRESSURE_ALL, 25, 11)
 DEFINE_CAN_SEND_SYMBOL(canSendRadiatorSymbol, s_input.radiator_warn, COOLANT_LOW, 25, 12)
-DEFINE_CAN_SEND_SYMBOL(canSendDoorOpen, shouldShowDoorOpenWarning(), CAR_CAN_ROLL, 25, 13)
-DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 14)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenLeft, shouldShowDoorOpenLeftWarning(), DOOR_OPEN_LEFT, 25, 13)
+DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRight, shouldShowDoorOpenRightWarning(), DOOR_OPEN_RIGHT, 25, 14)
+DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 15)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
@@ -884,7 +893,8 @@ int main() {
                 queuePush(canSendTireDeflatedRr);
                 queuePush(canSendTireDeflatedAll);
                 queuePush(canSendRadiatorSymbol);
-                queuePush(canSendDoorOpen);
+                queuePush(canSendDoorOpenLeft);
+                queuePush(canSendDoorOpenRight);
                 queuePush(canSendTailgateOpen);
             }
             // Send every 500 ms
