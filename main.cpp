@@ -120,9 +120,7 @@ enum ErrorLightID : uint16_t {
 
 // Vehicle state structure
 struct SInput {
-    bool connected = false;
-
-    IGNITION_STATE ignition = IG_OFF;
+    IGNITION_STATE ignition = IG_ON;
     INDICATOR indicator_state = I_OFF;
 
     uint16_t time_year = 2010;
@@ -137,7 +135,7 @@ struct SInput {
     GEAR currentGear = PARK;
     GEAR_MANUAL manualGear = NONE;
     GEAR_MODE mode = SPORT;
-    uint16_t fuel = 0;
+    uint16_t fuel = 1000;
     uint16_t fuel_injection = 0;
     uint8_t water_temp = 0;
     uint16_t custom_light = 0;
@@ -158,7 +156,7 @@ struct SInput {
     bool clutch_temp = false;
     bool brake_temp = false;
     bool radiator_warn = false;
-    bool engine_running = false;
+    bool engine_running = true;
 
     struct {
         bool fl_deflated = false;
@@ -346,7 +344,6 @@ void parseTelemetryLine() {
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
 
-    s_input.connected = true;
     led1 = !led1;
 }
 
@@ -580,9 +577,6 @@ static uint16_t interpolateFuel(float percent) {
 void canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
-
-    if (!s_input.connected)
-        return;
 
     float fuel = (float)s_input.fuel / 1000.f;
     if (fuel > 1.0f) fuel = 1.0f;
