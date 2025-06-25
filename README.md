@@ -15,15 +15,20 @@ The cluster I have is a km/h model from a car __with an automatic gearbox__. It 
 The code is able to control following things on the cluster
 
 - Speedometer
-    - ODO / trip (automatic based on speed)
     - This needed to be "calibrated", see the code
 - RPM
 - Indicators
 - Backlight
+- Indirectly controlled by the cluster
+    - Odometer (mileage)
+    - Trip meter
+    - Average speed
+    - Average fuel consumption
+    - Range
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
+    - Relatively well calibrated
     - Low fuel warning is automatic based on the level
-    - Range is calculated by the cluster
 - Current fuel consumption needle
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
@@ -42,7 +47,9 @@ The code is able to control following things on the cluster
     - High brake temperature
     - Tire deflated (individual, all)
     - Radiator warning
-    - ... and more can (and will) be added
+    - Doors open while on gear
+    - Tailgate open
+    - ... and more can be added
 - Water temperature
     - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
 - Oil level
@@ -73,7 +80,7 @@ The code is able to control following things on the cluster
 __Tip:__ There are faint numbers on the cluster port marking the pin numbers. Look closely!
 
 - __Temperature__: Outside temperature is measured with an external sensor of resistive type between pins 4 and 5. A resistor of 10k Ohm can be used to show approximately 10'C which removes the cold weather warning
-- __BC buttons__: Cluster menus can be navigated by connecting pin 16 to ground with 3 buttons via resistors. The values should be 1k (Enter), 2k (Up), 3k (Down) Ohm to ground
+- __BC buttons__: Cluster menus can be navigated by connecting pin 16 to ground with 3 buttons via resistors. The values should be 1k (Enter), 2k (Up), 3k (Down) Ohm
 
 Remember to connect the cluster GND, microcontroller GND and Serial CAN bus adapter GND together.
 
@@ -108,8 +115,8 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 25     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
 | 26     | 2    | `cruise speed`      | km/h × 10                            |
 | 28     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
-| 29     | 1    | `ignition`          | 1 = on, 0 = off                      |
-| 30     | 1    | `engine running`    | 3 = starter, 2 = on, 1 = accessory only, 0 = off                      |
+| 29     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
+| 30     | 1    | `engine running`    | 1 = on, 0 = off                      |
 | 31     | 1    | `'E'`               | End marker                           |
 
 ### `showlights` Breakdown
@@ -161,3 +168,11 @@ Bit 29 : DL_TAILGATEOPEN  (Tailgate open)
 - There's a Discord community around hacking the clusters with lots of knowledge and information
     - [Arduino-Tacho Gang](https://discord.gg/UQFsS9D6kq)
 - Lights on the cluster (like Check Engine, DTC, Oil Pressure) can be controlled with CAN ID `0x592`. See `canSendErrorLight` and codes in [symbol document](./external/E92%20checkcontrol%20symbols.pdf)
+- Special credits for material or help to
+    - beanseater420
+    - peter black
+       - [Log](./external/e64_dump_peter_black.trc)
+       - [Automatic gear reverse engineering](./external/automatic_gear_peter_black.webp)
+    - [HeinrichG-V12](https://github.com/HeinrichG-V12/E65_ReverseEngineering)
+    - [Trevor Cook](https://www.loopybunny.co.uk/CarPC/k_can.html)
+    - [Marcin648](https://github.com/Marcin648/e90-dashboard-ets2)
