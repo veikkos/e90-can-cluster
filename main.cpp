@@ -90,13 +90,13 @@ enum ErrorLightID : uint16_t {
     COLD_WEATHER = 79,
     BATTERY_YELLOW = 161,
     EXCLAMATION_MARK_YELLOW = 169,
-    DTC_DOUBLE_BLINK = 184,
+    DTC_DOUBLE_BLINKING = 184,
     LOW_TIRE_PRESSURE_FRONT_LEFT = 139,
     LOW_TIRE_PRESSURE_REAR_RIGHT = 140,
     LOW_TIRE_PRESSURE_REAR_LEFT = 141,
     LOW_TIRE_PRESSURE_FRONT_RIGHT = 143,
     LOW_TIRE_PRESSURE_ALL = 147,
-    DTC_DEACTIVATED = 36,
+    DSC_TRIANGLE_DOUBLE = 36,
     DSC_TRIANGLE_SYMBOL_ONLY = 215,
     FOOT_TO_BRAKE = 244,
     GEAR_ISSUE = 348,
@@ -118,6 +118,8 @@ enum ErrorLightID : uint16_t {
     DOOR_OPEN_LEFT = 715,
     DOOR_OPEN_RIGHT = 716,
     DSC_OFF = 673,
+    ALARM_LIGHT_EXCLAMATION = 162,
+    ALARM_LIGHT = 509
     // What's there on 400 and beyond...?
 };
 
@@ -148,8 +150,10 @@ struct SInput {
     bool light_highbeam = false;
     bool light_lowbeam = true;
     bool light_fog = false;
-    bool light_tc = false;
-    bool light_esc = false;
+    bool light_tc_active = false;
+    bool light_esc_active = false;
+    bool light_tc_disabled = false;
+    bool light_esc_disabled = false;
     bool oil_warn = false;
     bool battery_warn = false;
     bool abs_warn = false;
@@ -261,7 +265,7 @@ void parseTelemetryLine() {
     s_input.light_shift      = flags & (1 << 0);
     s_input.light_highbeam   = flags & (1 << 1);
     s_input.handbrake        = flags & (1 << 2);
-    s_input.light_tc         = flags & (1 << 4);
+    s_input.light_tc_active  = flags & (1 << 4);
 
     bool left_signal  = flags & (1 << 5);
     bool right_signal = flags & (1 << 6);
@@ -279,7 +283,7 @@ void parseTelemetryLine() {
     s_input.battery_warn       = flags & (1 << 9);
     s_input.abs_warn           = flags & (1 << 10);
     s_input.light_lowbeam      = flags & (1 << 12);
-    s_input.light_esc          = flags & (1 << 13);
+    s_input.light_esc_active   = flags & (1 << 13);
     s_input.check_engine       = flags & (1 << 14);
     s_input.clutch_temp        = flags & (1 << 15);
     s_input.light_fog          = flags & (1 << 16);
@@ -307,12 +311,14 @@ void parseTelemetryLine() {
     s_input.engine_temp_yellow = flags & (1 << 23);
     s_input.engine_temp_red    = flags & (1 << 24);
 
-    // Not yet used
     s_input.doors.fl_open = flags & (1 << 25);
     s_input.doors.fr_open = flags & (1 << 26);
     s_input.doors.rl_open = flags & (1 << 27);
     s_input.doors.rr_open = flags & (1 << 28);
     s_input.doors.tailgate_open = flags & (1 << 29);
+
+    s_input.light_tc_disabled  = flags & (1 << 30);
+    s_input.light_esc_disabled = flags & (1 << 31);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -750,10 +756,11 @@ DEFINE_CAN_SEND_SYMBOL(canSendRadiatorSymbol, s_input.radiator_warn, COOLANT_LOW
 DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenLeft, shouldShowDoorOpenLeftWarning(), DOOR_OPEN_LEFT, 25, 13)
 DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRight, shouldShowDoorOpenRightWarning(), DOOR_OPEN_RIGHT, 25, 14)
 DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 15)
+DEFINE_CAN_SEND_SYMBOL(canSendEscDisabledSymbol, s_input.light_esc_disabled, DSC_TRIANGLE_DOUBLE, 25, 16)
 
 // Interval = 50 ms
-DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc, DTC_SYMBOL_ONLY, 100, 1)
-DEFINE_CAN_SEND_SYMBOL(canSendEscSymbol, s_input.light_esc, DSC_TRIANGLE_SYMBOL_ONLY, 100, 2)
+DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
+DEFINE_CAN_SEND_SYMBOL(canSendEscSymbol, s_input.light_esc_active, DSC_TRIANGLE_SYMBOL_ONLY, 100, 2)
 
 void canSendCustomSymbol() {
     static bool last_state = false;
@@ -896,6 +903,7 @@ int main() {
                 queuePush(canSendDoorOpenLeft);
                 queuePush(canSendDoorOpenRight);
                 queuePush(canSendTailgateOpen);
+                queuePush(canSendEscDisabledSymbol);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
