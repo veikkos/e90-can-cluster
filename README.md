@@ -107,26 +107,27 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | Offset | Size | Field               | Description                          |
 |--------|------|---------------------|--------------------------------------|
 | 0      | 1    | `'S'`               | Start marker                         |
-| 1      | 2    | `year`              | e.g., 2025                           |
-| 3      | 1    | `month`             | 1–12                                 |
-| 4      | 1    | `day`               | 1–31                                 |
-| 5      | 1    | `hour`              | 0–23                                 |
-| 6      | 1    | `minute`            | 0–59                                 |
-| 7      | 1    | `second`            | 0–59                                 |
-| 8      | 2    | `rpm`               | 0–65535                              |
-| 10     | 2    | `speed`             | km/h × 10 (e.g. 853 = 85.3 km/h)     |
-| 12     | 1    | `gear`              | 0 = R, 1 = N, 2+ = forward gears     |
-| 13     | 1    | `engine temp`       | °C                                   |
-| 14     | 2    | `fuel`              | 0–1000 (% × 10)                      |
-| 16     | 4    | `showlights`        | Bitfield of all light states (see table below) |
-| 20     | 2    | `fuel injection`    | microliters per 100 ms               |
-| 22     | 2    | `custom light`      | Symbol ID (0–65535)                  |
-| 24     | 1    | `custom light on`   | 1 = show, 0 = off                    |
-| 25     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
-| 26     | 2    | `cruise speed`      | km/h × 10                            |
-| 28     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
-| 29     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
-| 30     | 1    | `engine running`    | 1 = on, 0 = off                      |
+| 1      | 1    | `year`              | e.g., 25 = 2025                      |
+| 2      | 1    | `month`             | 1–12                                 |
+| 3      | 1    | `day`               | 1–31                                 |
+| 4      | 1    | `hour`              | 0–23                                 |
+| 5      | 1    | `minute`            | 0–59                                 |
+| 6      | 1    | `second`            | 0–59                                 |
+| 7      | 2    | `rpm`               | 0–65535                              |
+| 9      | 2    | `speed`             | km/h × 10 (e.g. 853 = 85.3 km/h)     |
+| 11     | 1    | `gear`              | 0 = R, 1 = N, 2+ = forward gears     |
+| 12     | 1    | `engine temp`       | °C                                   |
+| 13     | 2    | `fuel`              | 0–1000 (% × 10)                      |
+| 15     | 4    | `showlights`        | Bitfield of all light states (see table below) |
+| 19     | 2    | `fuel injection`    | microliters per 100 ms               |
+| 21     | 2    | `custom light`      | Symbol ID (0–65535)                  |
+| 23     | 1    | `custom light on`   | 1 = show, 0 = off                    |
+| 24     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
+| 25     | 2    | `cruise speed`      | km/h × 10                            |
+| 27     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
+| 28     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
+| 29     | 1    | `engine running`    | 1 = on, 0 = off                      |
+| 30     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start and end markers |
 | 31     | 1    | `'E'`               | End marker                           |
 
 ### `showlights` Breakdown
@@ -135,14 +136,14 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 Bit  0 : DL_SHIFT         (Shift light) UNUSED
 Bit  1 : DL_FULLBEAM      (Full beam headlights)
 Bit  2 : DL_HANDBRAKE     (Handbrake engaged)
-Bit  4 : DL_TC            (Traction control active/disabled)
+Bit  4 : DL_TC            (Traction control active)
 Bit  5 : DL_SIGNAL_L      (Left turn signal)
 Bit  6 : DL_SIGNAL_R      (Right turn signal)
 Bit  8 : DL_OILWARN       (Oil pressure warning)
-Bit  9 : DL_BATTERY       (Battery warning)
+Bit  9 : DL_BATTERY       (Battery warning) UNUSED
 Bit 10 : DL_ABS           (ABS active/disabled) UNUSED
 Bit 12 : DL_LOWBEAM       (Low beam headlights)
-Bit 13 : DL_ESC           (ESC active/disabled)
+Bit 13 : DL_ESC           (ESC active)
 Bit 14 : DL_CHECKENGINE   (Check engine light)
 Bit 15 : DL_CLUTCHTEMP    (Clutch temp warning)
 Bit 16 : DL_FOGLIGHTS     (Fog lights on)
@@ -159,6 +160,8 @@ Bit 26 : DL_DOOROPEN_FR   (Front right door open)
 Bit 27 : DL_DOOROPEN_RL   (Rear left door open)
 Bit 28 : DL_DOOROPEN_RR   (Rear right door open)
 Bit 29 : DL_TAILGATEOPEN  (Tailgate open)
+Bit 30 : DL_TC_DISABLED   (Traction control disabled)
+Bit 31 : DL_ESC_DISABLED  (ESC disabled)
 ```
 
 ## Serial CAN bus adapter settings
