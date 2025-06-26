@@ -10,6 +10,16 @@ __NOTE:__ _The cluster will set "tampering dot" to the bottom part of the screen
 
 The cluster I have is a km/h model from a car __with an automatic gearbox__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
 
+## The setup
+
+The setup is a bit convoluted but currently it consists of the following parts:
+- [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
+    - This BeamNG plugin provides the game telemetry via UDP socket
+- [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/e90-can-cluster-proxy)
+    - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
+    - It could be possible to get rid of this proxy and send the telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
+- This repository is the microcontroller firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
+
 ## Current capabilities
 
 The code is able to control following things on the cluster
