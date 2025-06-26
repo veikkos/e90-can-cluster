@@ -235,17 +235,30 @@ void parseTelemetryLine() {
     if (!line_ready) return;
     line_ready = false;
 
+    const uint8_t payloadLength = 29;
     const uint8_t* p = (const uint8_t*)rx_buf;
 
-    if (p[0] != 'S' || p[31] != 'E') {
+    if (p[0] != 'S' || p[payloadLength + 2] != 'E') {
         printf("[UART] Invalid frame markers\n");
+        return;
+    }
+
+    uint8_t checksumReceived = p[payloadLength + 1];
+    uint8_t checksumCalculated = 0;
+
+    for (int i = 1; i < payloadLength + 1; i++) {
+        checksumCalculated = (checksumCalculated + p[i]) & 0xFF;
+    }
+
+    if (checksumCalculated != checksumReceived) {
+        printf("[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
         return;
     }
 
     int idx = 1; // skip 'S'
 
     // Timestamp
-    s_input.time_year   = parse_u16(&p[idx]); idx += 2;
+    s_input.time_year   = p[idx++] + 2000;
     s_input.time_month  = p[idx++];
     s_input.time_day    = p[idx++];
     s_input.time_hour   = p[idx++];
