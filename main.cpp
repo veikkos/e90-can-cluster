@@ -19,8 +19,6 @@ Timer canTimer;
 uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
-uint32_t lastLogTime = 0;
-int eventsSentThisSecond = 0;
 
 // Define M_PI if not present
 #ifndef M_PI
@@ -218,6 +216,7 @@ void readSerial() {
             } else {
                 // Buffer overflow or bad frame, reset
                 rx_pos = 0;
+                led4 = !led4;
             }
         }
     }
@@ -377,7 +376,6 @@ void sendCAN(uint32_t id, const uint8_t* data) {
     };
     memcpy(&buf[6], data, 8);
     canSerial.write(buf, 14);
-    eventsSentThisSecond++;
 }
 
 void canSendIgnitionFrame() {
@@ -934,14 +932,6 @@ int main() {
             }
 
             canCounter++;
-
-            if (now_ms - lastLogTime >= 1000) {
-                if (eventsSentThisSecond > 170) {
-                    led4 = true;
-                }
-                eventsSentThisSecond = 0;
-                lastLogTime = now_ms;
-            }
         }
 
         // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
