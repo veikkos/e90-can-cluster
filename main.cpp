@@ -117,7 +117,7 @@ enum ErrorLightID : uint16_t {
     DOOR_OPEN_RIGHT = 716,
     DSC_OFF = 673,
     ALARM_LIGHT_EXCLAMATION = 162,
-    ALARM_LIGHT = 509
+    ALARM_LIGHT = 508
     // What's there on 400 and beyond...?
 };
 
@@ -152,6 +152,7 @@ struct SInput {
     bool light_esc_active = false;
     bool light_tc_disabled = false;
     bool light_esc_disabled = false;
+    bool light_beacon = false;
     bool oil_warn = false;
     bool battery_warn = false;
     bool abs_warn = false;
@@ -294,6 +295,7 @@ void parseTelemetryLine() {
     s_input.oil_warn           = flags & (1 << 8);
     s_input.battery_warn       = flags & (1 << 9);
     s_input.abs_warn           = flags & (1 << 10);
+    s_input.light_beacon       = flags & (1 << 11);
     s_input.light_lowbeam      = flags & (1 << 12);
     s_input.light_esc_active   = flags & (1 << 13);
     s_input.check_engine       = flags & (1 << 14);
@@ -768,6 +770,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenLeft, shouldShowDoorOpenLeftWarning(), DOO
 DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRight, shouldShowDoorOpenRightWarning(), DOOR_OPEN_RIGHT, 25, 14)
 DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 15)
 DEFINE_CAN_SEND_SYMBOL(canSendEscDisabledSymbol, s_input.light_esc_disabled, DSC_TRIANGLE_DOUBLE, 25, 16)
+DEFINE_CAN_SEND_SYMBOL(canSendBeaconSymbol, s_input.light_beacon, ALARM_LIGHT, 25, 17)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
@@ -915,6 +918,7 @@ int main() {
                 queuePush(canSendDoorOpenRight);
                 queuePush(canSendTailgateOpen);
                 queuePush(canSendEscDisabledSymbol);
+                queuePush(canSendBeaconSymbol);
             }
             // Send every 500 ms
             if (canCounter % 50 == 5) {
