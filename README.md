@@ -1,10 +1,10 @@
-# BMW e90 CAN bus cluster project
+# BMW e90 cluster Arduino project
 
-This is a work-in-progress BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using a microcontroller. Currently I'm using _mbed LPC1768_ but the code can be ported to other platforms. [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
+This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games. It is demonstrably easy to port the code to other similar platforms (see notes about [mbed](#notes-and-findings)). [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
 
 __Projects like these are floating all around the internet. This project focuses on documenting things [mostly in code] that were hard to come by. It also goes a bit further than many similar projects. Please feel free to contribute!__
 
-__NOTE:__ _The cluster will set "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
+__NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
 
 ![Highlight image](./media/highlight.jpg)
 
@@ -19,7 +19,7 @@ The setup is a bit convoluted but currently it consists of the following parts:
     - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
     - The proxy supports **BeamNG**, **Euro Truck Simulator 2** and **American Truck Simulator**
     - It could be possible to get rid of this proxy and send the telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
-- This repository is the microcontroller firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
+- This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
 
 ## Current capabilities
 
@@ -176,12 +176,14 @@ Bit 31 : DL_ESC_DISABLED  (ESC disabled)
     - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
 - There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
 - __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
+- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% at 115200 and it did not work. When changed to the second closest error -3.5% it started working
 
 ## Notes and findings
 
 - There's a Discord community around hacking the clusters with lots of knowledge and information
     - [Arduino-Tacho Gang](https://discord.gg/UQFsS9D6kq)
 - Lights on the cluster (like Check Engine, DTC, Oil Pressure) can be controlled with CAN ID `0x592`. See `canSendErrorLight` and codes in [symbol document](./external/E92%20checkcontrol%20symbols.pdf)
+- The code was originally implemented for _mbed LPC1768_. You can find the old code from the history with a tag `mbed_last`
 - Special credits for material or help to
     - beanseater420
     - peter black

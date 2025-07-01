@@ -1,21 +1,11 @@
-#include "mbed.h"
-#include <ctime>
-#include <cstring>
+#include <Arduino.h>
 #include <math.h>
 
-
-// LED indicators
-DigitalOut led1(LED1);
-DigitalOut led2(LED2);
-DigitalOut led3(LED3);
-DigitalOut led4(LED4);
-
 // Serial interfaces
-BufferedSerial canSerial(p9, p10, 115200);
-BufferedSerial pc(USBTX, USBRX, 921600);
+#define canSerial Serial1
+#define pc Serial
 
-// Timer
-Timer canTimer;
+// Timers
 uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
@@ -191,47 +181,43 @@ SInput s_input;
 // Serial RX buffer
 #define RX_BUF_SIZE 96
 char rx_buf[RX_BUF_SIZE];
-volatile size_t rx_pos = 0;
-volatile bool line_ready = false;
-volatile bool serial_irq_pending = false;
-
-void serialIrQ() {
-    serial_irq_pending = true;
-    led3 = !led3;
-}
+size_t rx_pos = 0;
+bool line_ready = false;
 
 void readSerial() {
-    while (pc.readable()) {
-        char c;
-        if (pc.read(&c, 1)) {
-            if (rx_pos == 0 && c != 'S') {
-                // Waiting for the start character but received something else so ignore it
-            } else if (rx_pos < RX_BUF_SIZE - 1) {
-                if (c == 'E') {
-                    rx_buf[rx_pos] = c;
-                    line_ready = true;
-                    rx_pos = 0;
-                } else {
-                    rx_buf[rx_pos++] = c;
-                }
-            } else {
-                // Buffer overflow or bad frame, reset
+    while (pc.available()) {
+        char c = pc.read();
+        if (rx_pos == 0 && c != 'S') {
+            // Waiting for the start character but received something else so ignore it
+        } else if (rx_pos < RX_BUF_SIZE - 1) {
+            if (c == 'E') {
+                rx_buf[rx_pos] = c;
+                line_ready = true;
                 rx_pos = 0;
-                led4 = !led4;
+            } else {
+                rx_buf[rx_pos++] = c;
             }
+        } else {
+            rx_pos = 0;
+            pc.printf("[UART] Ran out of buffer\n");
         }
     }
 }
 
 static inline uint16_t parse_u16(const uint8_t* p) {
-    return p[0] | (p[1] << 8);
+    return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
 }
 
 static inline uint32_t parse_u32(const uint8_t* p) {
-    return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    return (uint32_t)p[0]
+         | ((uint32_t)p[1] << 8)
+         | ((uint32_t)p[2] << 16)
+         | ((uint32_t)p[3] << 24);
 }
 
 void parseTelemetryLine() {
+    digitalWrite(LED_BUILTIN, 0);
+
     if (!line_ready) return;
     line_ready = false;
 
@@ -239,7 +225,7 @@ void parseTelemetryLine() {
     const uint8_t* p = (const uint8_t*)rx_buf;
 
     if (p[0] != 'S' || p[payloadLength + 2] != 'E') {
-        printf("[UART] Invalid frame markers\n");
+        pc.printf("[UART] Invalid frame markers\n");
         return;
     }
 
@@ -251,7 +237,7 @@ void parseTelemetryLine() {
     }
 
     if (checksumCalculated != checksumReceived) {
-        printf("[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
+        pc.printf("[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
         return;
     }
 
@@ -275,13 +261,13 @@ void parseTelemetryLine() {
     uint32_t flags      = parse_u32(&p[idx]); idx += 4;
 
     // Parse flags using bitmasks
-    s_input.light_shift      = flags & (1 << 0);
-    s_input.light_highbeam   = flags & (1 << 1);
-    s_input.handbrake        = flags & (1 << 2);
-    s_input.light_tc_active  = flags & (1 << 4);
+    s_input.light_shift      = flags & (1UL << 0);
+    s_input.light_highbeam   = flags & (1UL << 1);
+    s_input.handbrake        = flags & (1UL << 2);
+    s_input.light_tc_active  = flags & (1UL << 4);
 
-    bool left_signal  = flags & (1 << 5);
-    bool right_signal = flags & (1 << 6);
+    bool left_signal  = flags & (1UL << 5);
+    bool right_signal = flags & (1UL << 6);
 
     if (left_signal && right_signal)
         s_input.indicator_state = I_HAZZARD;
@@ -292,21 +278,21 @@ void parseTelemetryLine() {
     else
         s_input.indicator_state = I_OFF;
 
-    s_input.oil_warn           = flags & (1 << 8);
-    s_input.battery_warn       = flags & (1 << 9);
-    s_input.abs_warn           = flags & (1 << 10);
-    s_input.light_beacon       = flags & (1 << 11);
-    s_input.light_lowbeam      = flags & (1 << 12);
-    s_input.light_esc_active   = flags & (1 << 13);
-    s_input.check_engine       = flags & (1 << 14);
-    s_input.clutch_temp        = flags & (1 << 15);
-    s_input.light_fog          = flags & (1 << 16);
-    s_input.brake_temp         = flags & (1 << 17);
+    s_input.oil_warn           = flags & (1UL << 8);
+    s_input.battery_warn       = flags & (1UL << 9);
+    s_input.abs_warn           = flags & (1UL << 10);
+    s_input.light_beacon       = flags & (1UL << 11);
+    s_input.light_lowbeam      = flags & (1UL << 12);
+    s_input.light_esc_active   = flags & (1UL << 13);
+    s_input.check_engine       = flags & (1UL << 14);
+    s_input.clutch_temp        = flags & (1UL << 15);
+    s_input.light_fog          = flags & (1UL << 16);
+    s_input.brake_temp         = flags & (1UL << 17);
 
-    s_input.tires.fl_deflated = flags & (1 << 18);
-    s_input.tires.fr_deflated = flags & (1 << 19);
-    s_input.tires.rl_deflated = flags & (1 << 20);
-    s_input.tires.rr_deflated = flags & (1 << 21);
+    s_input.tires.fl_deflated = flags & (1UL << 18);
+    s_input.tires.fr_deflated = flags & (1UL << 19);
+    s_input.tires.rl_deflated = flags & (1UL << 20);
+    s_input.tires.rr_deflated = flags & (1UL << 21);
 
     bool all_deflated = s_input.tires.fl_deflated &&
                         s_input.tires.fr_deflated &&
@@ -321,18 +307,18 @@ void parseTelemetryLine() {
         s_input.tires.rr_deflated = false;
     }
 
-    s_input.radiator_warn      = flags & (1 << 22);
-    s_input.engine_temp_yellow = flags & (1 << 23);
-    s_input.engine_temp_red    = flags & (1 << 24);
+    s_input.radiator_warn      = flags & (1UL << 22);
+    s_input.engine_temp_yellow = flags & (1UL << 23);
+    s_input.engine_temp_red    = flags & (1UL << 24);
 
-    s_input.doors.fl_open = flags & (1 << 25);
-    s_input.doors.fr_open = flags & (1 << 26);
-    s_input.doors.rl_open = flags & (1 << 27);
-    s_input.doors.rr_open = flags & (1 << 28);
-    s_input.doors.tailgate_open = flags & (1 << 29);
+    s_input.doors.fl_open = flags & (1UL << 25);
+    s_input.doors.fr_open = flags & (1UL << 26);
+    s_input.doors.rl_open = flags & (1UL << 27);
+    s_input.doors.rr_open = flags & (1UL << 28);
+    s_input.doors.tailgate_open = flags & (1UL << 29);
 
-    s_input.light_tc_disabled  = flags & (1 << 30);
-    s_input.light_esc_disabled = flags & (1 << 31);
+    s_input.light_tc_disabled  = flags & (1UL << 30);
+    s_input.light_esc_disabled = flags & (1UL << 31);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -367,7 +353,7 @@ void parseTelemetryLine() {
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
 
-    led1 = !led1;
+    digitalWrite(LED_BUILTIN, 1);
 }
 
 void sendCAN(uint32_t id, const uint8_t* data) {
@@ -408,8 +394,8 @@ void canSendRPM() {
     sendCAN(ID, data);
 }
 
-inline uint16_t kmhx10ToMph(uint16_t kmh_x10, int correction) {
-    return (min((int)kmh_x10, 2600) * (620 + correction) + 5000) / 10000;
+inline uint16_t kmhx10ToMph(uint16_t kmh_x10, uint32_t correction) {
+    return (min((uint32_t)kmh_x10, 2600) * (620 + correction) + 5000) / 10000;
 }
 
 void canSendSpeed() {
@@ -477,7 +463,6 @@ void canSendSteeringWheel() {
 void canSendAbs() {
     const uint32_t ID = 0x19E;
     static uint8_t counter = 0;
-    static uint8_t brake_frame_values[] = {0x43, 0x65, 0x67};
 
     uint8_t frame[8] = {
         0x00, 0xE0, 0x00, 0xFC, 0xCC, 0x00, 0x00, 0x00
@@ -849,109 +834,112 @@ void canSendCruiseControl() {
 
 // CAN queue
 const int MaxQueueSize = 64;
-typedef void (*CanFunction)();
-CanFunction canQueue[MaxQueueSize];
+void (*canQueue[MaxQueueSize])();
 int queueHead = 0;
 int queueTail = 0;
 
-inline bool queueIsEmpty() { return queueHead == queueTail; }
-inline bool queueIsFull() { return ((queueTail + 1) % MaxQueueSize) == queueHead; }
-inline void queuePush(CanFunction f) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
-inline CanFunction queuePop() { if (!queueIsEmpty()) { CanFunction f = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
+bool queueIsEmpty() { return queueHead == queueTail; }
+bool queueIsFull() { return ((queueTail + 1) % MaxQueueSize) == queueHead; }
+void queuePush(void (*f)()) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
+void (*queuePop())() { if (!queueIsEmpty()) { void (*f)() = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
-int main() {
-    pc.sigio(serialIrQ);
-    canTimer.start();
+void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    pc.begin(921600);
+    canSerial.begin(115200);
 
-    while (true) {
-        uint32_t now_us = canTimer.elapsed_time().count();
-        uint32_t now_ms = now_us / 1000;
+#if defined(__AVR_AT90USB1286__)
+    // Pick the slightly slower baudrate as the higher more accurate one does not work
+    // with the CAN bus adapter
+    UCSR1A &= ~(1 << U2X1);
+    UBRR1 = 8;
+#endif
+}
 
-        // Main loop is executed every 10 ms
-        if (now_ms - lastTime >= 10) {
-            lastTime = now_ms;
+void loop() {
+    uint32_t now_us = micros();
+    uint32_t now_ms = now_us / 1000;
 
-            // Send every 100 ms
-            if (canCounter % 10 == 0) {
-                queuePush(canSendIgnitionFrame);
-                queuePush(canSendEngineTempAndFuelInjection);
-                queuePush(canSendGearboxData);
-                queuePush(canSendSteeringWheel);
-                queuePush(canSendDmeStatus);
-                queuePush(canSendCruiseControl);
-                queuePush(canSendVehicleDynamics);
-            }
-            // Send every 50 ms
-            if (canCounter % 5 == 1) {
-                queuePush(canSendRPM);
-                queuePush(canSendSpeed);
-                queuePush(canSendTcSymbol);
-                queuePush(canSendEscSymbol);
-            }
-            // Send every 200 ms (group 1)
-            if (canCounter % 20 == 7) {
-                queuePush(canSendLights);
-                queuePush(canSendIndicator);
-                queuePush(canSendAbs);
-                queuePush(canSendAbsCounter);
-                queuePush(canSendAirbagCounter);
-                queuePush(canSendFuel);
-                queuePush(canSendHandbrake);
-            }
-            // Send every 200 ms (symbols)
-            if (canCounter % 20 == 13) {
-                queuePush(canSendEngineTempYellowSymbol);
-                queuePush(canSendEngineTempRedSymbol);
-                queuePush(canSendCheckEngineSymbol);
-                queuePush(canSendClutchTempSymbol);
-                queuePush(canSendOilWarningSymbol);
-                queuePush(canSendBatteryWarningSymbol);
-                queuePush(canSendCustomSymbol);
-                queuePush(canSendBrakeTempSymbol);
-                queuePush(canSendTireDeflatedFl);
-                queuePush(canSendTireDeflatedFr);
-                queuePush(canSendTireDeflatedRl);
-                queuePush(canSendTireDeflatedRr);
-                queuePush(canSendTireDeflatedAll);
-                queuePush(canSendRadiatorSymbol);
-                queuePush(canSendDoorOpenLeft);
-                queuePush(canSendDoorOpenRight);
-                queuePush(canSendTailgateOpen);
-                queuePush(canSendEscDisabledSymbol);
-                queuePush(canSendBeaconSymbol);
-            }
-            // Send every 500 ms
-            if (canCounter % 50 == 5) {
-                queuePush(canSuppressSos);
-                queuePush(canSuppressService);
-            }
-            // Send every 1 s
-            if (canCounter % 100 == 35) {
-                queuePush(canSendTime);
-                led2 = !led2;
-            }
-            // Send every 10 s
-            if (canCounter % 1000 == 47) {
-                queuePush(canSendOilLevel);
-            }
+    // Main loop is executed every 10 ms
+    if (now_ms - lastTime >= 10) {
+        lastTime = now_ms;
 
-            canCounter++;
+        // Send every 100 ms
+        if (canCounter % 10 == 0) {
+            queuePush(canSendIgnitionFrame);
+            queuePush(canSendEngineTempAndFuelInjection);
+            queuePush(canSendGearboxData);
+            queuePush(canSendSteeringWheel);
+            queuePush(canSendDmeStatus);
+            queuePush(canSendCruiseControl);
+            queuePush(canSendVehicleDynamics);
+        }
+        // Send every 50 ms
+        if (canCounter % 5 == 1) {
+            queuePush(canSendRPM);
+            queuePush(canSendSpeed);
+            queuePush(canSendTcSymbol);
+            queuePush(canSendEscSymbol);
+        }
+        // Send every 200 ms (group 1)
+        if (canCounter % 20 == 7) {
+            queuePush(canSendLights);
+            queuePush(canSendIndicator);
+            queuePush(canSendAbs);
+            queuePush(canSendAbsCounter);
+            queuePush(canSendAirbagCounter);
+            queuePush(canSendFuel);
+            queuePush(canSendHandbrake);
+        }
+        // Send every 200 ms (symbols)
+        if (canCounter % 20 == 13) {
+            queuePush(canSendEngineTempYellowSymbol);
+            queuePush(canSendEngineTempRedSymbol);
+            queuePush(canSendCheckEngineSymbol);
+            queuePush(canSendClutchTempSymbol);
+            queuePush(canSendOilWarningSymbol);
+            queuePush(canSendBatteryWarningSymbol);
+            queuePush(canSendCustomSymbol);
+            queuePush(canSendBrakeTempSymbol);
+            queuePush(canSendTireDeflatedFl);
+            queuePush(canSendTireDeflatedFr);
+            queuePush(canSendTireDeflatedRl);
+            queuePush(canSendTireDeflatedRr);
+            queuePush(canSendTireDeflatedAll);
+            queuePush(canSendRadiatorSymbol);
+            queuePush(canSendDoorOpenLeft);
+            queuePush(canSendDoorOpenRight);
+            queuePush(canSendTailgateOpen);
+            queuePush(canSendEscDisabledSymbol);
+            queuePush(canSendBeaconSymbol);
+        }
+        // Send every 500 ms
+        if (canCounter % 50 == 5) {
+            queuePush(canSuppressSos);
+            queuePush(canSuppressService);
+        }
+        // Send every 1 s
+        if (canCounter % 100 == 35) {
+            queuePush(canSendTime);
+        }
+        // Send every 10 s
+        if (canCounter % 1000 == 47) {
+            queuePush(canSendOilLevel);
         }
 
-        // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
-        // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
-        if (now_us - lastTaskTime >= 3000) {
-            CanFunction task = queuePop();
-            if (task) {
-                lastTaskTime = now_us;
-                task();
-            }
-        }
+        canCounter++;
+    }
 
-        if (serial_irq_pending) {
-            serial_irq_pending = false;
-            readSerial();
-            parseTelemetryLine();
+    // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
+    // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
+    if (now_us - lastTaskTime >= 3000) {
+        void (*task)() = queuePop();
+        if (task) {
+            lastTaskTime = now_us;
+            task();
         }
     }
+
+    readSerial();
+    parseTelemetryLine();
 }
