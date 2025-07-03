@@ -1,6 +1,6 @@
 # BMW e90 cluster Arduino project
 
-This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games. It is demonstrably easy to port the code to other similar platforms (see notes about [mbed](#notes-and-findings)). [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
+This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games. It is demonstrably easy to port the code to other similar platforms (see notes about `mbed`). [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
 
 __Projects like these are floating all around the internet. This project focuses on documenting things [mostly in code] that were hard to come by. It also goes a bit further than many similar projects. Please feel free to contribute!__
 
@@ -129,7 +129,6 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 28     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 29     | 1    | `engine running`    | 1 = on, 0 = off                      |
 | 30     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start and end markers |
-| 31     | 1    | `'E'`               | End marker                           |
 
 ### `showlights` Breakdown
 
@@ -143,6 +142,7 @@ Bit  6 : DL_SIGNAL_R      (Right turn signal)
 Bit  8 : DL_OILWARN       (Oil pressure warning)
 Bit  9 : DL_BATTERY       (Battery warning) UNUSED
 Bit 10 : DL_ABS           (ABS active/disabled) UNUSED
+Bit 11 : DL_BEACON        (Truck beacon light is on)
 Bit 12 : DL_LOWBEAM       (Low beam headlights)
 Bit 13 : DL_ESC           (ESC active)
 Bit 14 : DL_CHECKENGINE   (Check engine light)
@@ -176,7 +176,7 @@ Bit 31 : DL_ESC_DISABLED  (ESC disabled)
     - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
 - There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
 - __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
-- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% at 115200 and it did not work. When changed to the second closest error -3.5% it started working
+- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
 
 ## Notes and findings
 
