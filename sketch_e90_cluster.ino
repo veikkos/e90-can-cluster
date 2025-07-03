@@ -180,6 +180,7 @@ SInput s_input;
 
 // Serial RX buffer
 #define RX_BUF_SIZE 96
+#define FRAME_LENGTH 32
 char rx_buf[RX_BUF_SIZE];
 size_t rx_pos = 0;
 bool line_ready = false;
@@ -190,7 +191,7 @@ void readSerial() {
         if (rx_pos == 0 && c != 'S') {
             // Waiting for the start character but received something else so ignore it
         } else if (rx_pos < RX_BUF_SIZE - 1) {
-            if (c == 'E') {
+            if (rx_pos == FRAME_LENGTH - 1) {
                 rx_buf[rx_pos] = c;
                 line_ready = true;
                 rx_pos = 0;
@@ -221,10 +222,10 @@ void parseTelemetryLine() {
     if (!line_ready) return;
     line_ready = false;
 
-    const uint8_t payloadLength = 29;
+    const uint8_t payloadLength = FRAME_LENGTH - 3;
     const uint8_t* p = (const uint8_t*)rx_buf;
 
-    if (p[0] != 'S' || p[payloadLength + 2] != 'E') {
+    if (p[0] != 'S' || p[FRAME_LENGTH - 1] != 'E') {
         pc.printf("[UART] Invalid frame markers\n");
         return;
     }
