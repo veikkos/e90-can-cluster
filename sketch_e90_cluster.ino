@@ -862,21 +862,20 @@ void handle1B4(const uint8_t* data) {
     pc.printf("[CAN1B4] Speed: %u km/h, Handbrake: %s\n", kmh, handbrake);
 }
 
-// WIP
 void handle330(const uint8_t* data) {
-    uint32_t odometer = ((uint32_t)data[2] << 16) | ((uint32_t)data[1] << 8) | (uint32_t)data[0];
     uint8_t avgFuel = data[3];
     uint8_t left = data[4];
     uint8_t right = data[5];
-    uint16_t rawRange = (data[6] << 8) | data[7];
+    uint16_t rawRange = (data[7] << 8) | data[6];
     uint16_t range = rawRange / 16;
 
-    pc.printf("[CAN330] Odometer: %lu km, AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
-           odometer, avgFuel, left, right, range);
+    pc.printf("[CAN330] AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
+        avgFuel, left, right, range);
 }
 
 static const CanHandlerEntry handler_table[] = {
-    { 0x000001B4, handle1B4 }
+    { 0x000001B4, handle1B4 },
+    { 0x00000330, handle330 }
 };
 
 static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
