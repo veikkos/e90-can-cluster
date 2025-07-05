@@ -873,9 +873,15 @@ void handle330(const uint8_t* data) {
         avgFuel, left, right, range);
 }
 
+void handle2C0(const uint8_t* data) {
+    pc.printf("[CAN2C0] Brightness %X %X %X %X\n",
+        data[0], data[1], data[2], data[3]);
+}
+
 static const CanHandlerEntry handler_table[] = {
     { 0x000001B4, handle1B4 },
-    { 0x00000330, handle330 }
+    { 0x00000330, handle330 },
+    { 0x000002C0, handle2C0 }
 };
 
 static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
