@@ -837,7 +837,76 @@ void canSendCruiseControl() {
     sendCAN(ID, frame);
 }
 
-// CAN queue
+// CAN read
+#define FRAME_SIZE 14
+static uint8_t buffer[FRAME_SIZE];
+
+typedef void (*FrameHandler)(const uint8_t* frame);
+
+typedef struct {
+    uint32_t id;
+    FrameHandler handler;
+} CanHandlerEntry;
+
+void handle1B4(const uint8_t* data) {
+    int16_t rawHigh = (int16_t)data[1] - 192;
+    uint16_t rawLow = data[0];
+    uint16_t rawSpeed = ((uint16_t)rawHigh * 256 + rawLow);
+    uint16_t mph = rawSpeed / 16;
+
+    // Integer-based km/h conversion with rounding
+    uint16_t kmh = (uint32_t)(mph * 160934 + 50000) / 100000;
+
+    const char* handbrake = (data[5] & 0x02) ? "ON" : "OFF";
+
+    pc.printf("[CAN1B4] Speed: %u km/h, Handbrake: %s\n", kmh, handbrake);
+}
+
+// WIP
+void handle330(const uint8_t* data) {
+    uint32_t odometer = ((uint32_t)data[2] << 16) | ((uint32_t)data[1] << 8) | (uint32_t)data[0];
+    uint8_t avgFuel = data[3];
+    uint8_t left = data[4];
+    uint8_t right = data[5];
+    uint16_t rawRange = (data[6] << 8) | data[7];
+    uint16_t range = rawRange / 16;
+
+    pc.printf("[CAN330] Odometer: %lu km, AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
+           odometer, avgFuel, left, right, range);
+}
+
+static const CanHandlerEntry handler_table[] = {
+    { 0x000001B4, handle1B4 }
+};
+
+static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
+
+static bool match_id(const uint8_t* buf, uint32_t id) {
+    return
+        buf[0] == ((id >> 24) & 0xFF) &&
+        buf[1] == ((id >> 16) & 0xFF) &&
+        buf[2] == ((id >> 8) & 0xFF) &&
+        buf[3] == (id & 0xFF);
+}
+
+void readCANSerial(void) {
+    while (canSerial.available()) {
+        for (int i = 0; i < FRAME_SIZE - 1; ++i) {
+            buffer[i] = buffer[i + 1];
+        }
+        buffer[FRAME_SIZE - 1] = canSerial.read();
+
+        // check all handlers
+        for (size_t i = 0; i < handler_count; ++i) {
+            if (match_id(buffer, handler_table[i].id)) {
+                handler_table[i].handler(buffer + 4);
+                break;
+            }
+        }
+    }
+}
+
+// CAN write queue
 const int MaxQueueSize = 64;
 void (*canQueue[MaxQueueSize])();
 int queueHead = 0;
@@ -947,4 +1016,6 @@ void loop() {
 
     readSerial();
     parseTelemetryLine();
+
+    readCANSerial();
 }
