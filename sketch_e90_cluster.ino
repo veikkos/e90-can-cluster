@@ -549,21 +549,29 @@ void canSendVehicleDynamics() {
     sendCAN(ID, frame);
 }
 
-typedef struct {
+struct FuelLevelPoint {
     float fuel_percent;  // 1.0 = 100%, 0.75 = 75%, etc.
     uint16_t meter_level; // Value to send to the cluster
-} FuelLevelPoint;
+};
 
-// This is bit heavy floating point calculation but fine by now
-static uint16_t interpolateFuel(float percent) {
-    FuelLevelPoint table[] = {
-        {1.00f, 8150},
-        {0.75f, 5150},
-        {0.50f, 3450},
-        {0.25f, 2050},
-        {0.00f,  500}
-    };
+FuelLevelPoint fuelTableLeft[] = {
+    {1.00f, 9000},
+    {0.75f, 6250},
+    {0.50f, 3600},
+    {0.25f, 1950},
+    {0.00f,  650}
+};
 
+FuelLevelPoint fuelTableRight[] = {
+    {1.00f, 7500},
+    {0.75f, 4600},
+    {0.50f, 3350},
+    {0.25f, 2200},
+    {0.00f, 1000}
+};
+
+// This is bit heavy floating point calculation but fine for now
+uint16_t interpolateFuel(float percent, struct FuelLevelPoint table[5]) {
     for (int i = 0; i < 4; ++i) {
         if (percent >= table[i + 1].fuel_percent) {
             float range = table[i].fuel_percent - table[i + 1].fuel_percent;
@@ -585,14 +593,16 @@ void canSendFuel() {
     if (fuel < 0.0f) fuel = 0.0f;
 
     // Fuel gauge is not linear so match it here
-    uint16_t level = interpolateFuel(fuel);
+    uint16_t levelLeft = interpolateFuel(fuel, fuelTableLeft);
 
-    frame[0] = level & 0xFF;
-    frame[1] = (level >> 8);
+    frame[0] = levelLeft & 0xFF;
+    frame[1] = (levelLeft >> 8);
 
-    // There are two sensors so duplicate the value
-    frame[2] = frame[0];
-    frame[3] = frame[1];
+    // There are two sensors
+    uint16_t levelRight = interpolateFuel(fuel, fuelTableRight);
+
+    frame[2] = levelRight & 0xFF;
+    frame[3] = (levelRight >> 8);
 
     sendCAN(ID, frame);
 }
