@@ -558,7 +558,8 @@ struct FuelLevelPoint {
 };
 
 FuelLevelPoint fuelTableLeft[] = {
-    {1.00f, 9000},
+    {1.00f, 9500},
+    {0.875f, 8200},
     {0.75f, 6250},
     {0.50f, 3600},
     {0.25f, 1950},
@@ -566,7 +567,8 @@ FuelLevelPoint fuelTableLeft[] = {
 };
 
 FuelLevelPoint fuelTableRight[] = {
-    {1.00f, 7500},
+    {1.00f, 8000},
+    {0.875f, 5400},
     {0.75f, 4600},
     {0.50f, 3350},
     {0.25f, 2200},
