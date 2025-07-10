@@ -10,6 +10,9 @@ uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
 
+// Refueling led
+#define REFUELING_LED_PIN 45
+
 // Define M_PI if not present
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -584,13 +587,36 @@ uint16_t interpolateFuel(float percent, struct FuelLevelPoint table[5]) {
     return table[4].meter_level; // fallback for <0%
 }
 
+inline float currentFuelToFloat() {
+    return (float)s_input.fuel / 1000.f;
+}
+
 void canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
+    static float previousFuel = currentFuelToFloat();
 
-    float fuel = (float)s_input.fuel / 1000.f;
+    const float maxDeltaRatePerSecond = 0.015f;
+    const float callIntervalSeconds = 0.2f;
+    const float maxDelta = maxDeltaRatePerSecond * callIntervalSeconds;
+
+    float fuel = currentFuelToFloat();
     if (fuel > 1.0f) fuel = 1.0f;
     if (fuel < 0.0f) fuel = 0.0f;
+
+    float delta = fuel - previousFuel;
+    bool refueling = false;
+
+    if (delta > maxDelta) {
+        fuel = previousFuel + maxDelta;
+        refueling = true;
+    } else if (delta < -maxDelta) {
+        fuel = previousFuel - maxDelta;
+        refueling = true;
+    }
+
+    previousFuel = fuel;
+    digitalWrite(REFUELING_LED_PIN, refueling ? HIGH : LOW);
 
     // Fuel gauge is not linear so match it here
     uint16_t levelLeft = interpolateFuel(fuel, fuelTableLeft);
@@ -924,6 +950,8 @@ void (*queuePop())() { if (!queueIsEmpty()) { void (*f)() = canQueue[queueHead];
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(REFUELING_LED_PIN, OUTPUT);
+
     pc.begin(921600);
     canSerial.begin(115200);
 
