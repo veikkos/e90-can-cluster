@@ -128,7 +128,7 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 27     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
 | 28     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 29     | 1    | `engine running`    | 1 = on, 0 = off                      |
-| 30     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start and end markers |
+| 30     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
 
 ### `showlights` Breakdown
 
