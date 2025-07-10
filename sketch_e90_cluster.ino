@@ -1,6 +1,12 @@
 #include <Arduino.h>
 #include <math.h>
 
+// Config defines
+#define READ_FRAMES_FROM_CLUSTER
+//#define READ_FRAMES_FROM_CLUSTER_1B4
+#define READ_FRAMES_FROM_CLUSTER_330
+//#define READ_FRAMES_FROM_CLUSTER_2C0
+
 // Serial interfaces
 #define canSerial Serial1
 #define pc Serial
@@ -907,9 +913,15 @@ void handle2C0(const uint8_t* data) {
 }
 
 static const CanHandlerEntry handler_table[] = {
+#ifdef READ_FRAMES_FROM_CLUSTER_1B4
     { 0x000001B4, handle1B4 },
+#endif
+#ifdef READ_FRAMES_FROM_CLUSTER_330
     { 0x00000330, handle330 },
-    { 0x000002C0, handle2C0 }
+#endif
+#ifdef READ_FRAMES_FROM_CLUSTER_2C0
+    { 0x000002C0, handle2C0 },
+#endif
 };
 
 static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
@@ -1052,5 +1064,7 @@ void loop() {
     readSerial();
     parseTelemetryLine();
 
+#ifdef READ_FRAMES_FROM_CLUSTER
     readCANSerial();
+#endif
 }
