@@ -2,9 +2,7 @@
 #include <math.h>
 
 // Config defines
-#define READ_FRAMES_FROM_CLUSTER
 //#define READ_FRAMES_FROM_CLUSTER_1B4
-#define READ_FRAMES_FROM_CLUSTER_330
 //#define READ_FRAMES_FROM_CLUSTER_2C0
 
 // Serial interfaces
@@ -16,8 +14,12 @@ uint32_t lastTime = 0;
 uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
 
-// Refueling led
-#define REFUELING_LED_PIN 45
+// Refueling
+#define REFUELING_LED_PIN 33
+
+uint8_t avgFuelFromCluster = 0;
+const unsigned int refuelingCounterCycles = 2;
+unsigned int refuelingCounter = 0;
 
 // Define M_PI if not present
 #ifndef M_PI
@@ -399,7 +401,7 @@ void canSendRPM() {
 }
 
 inline uint16_t kmhx10ToMph(uint16_t kmh_x10, uint32_t correction) {
-    return (min((uint32_t)kmh_x10, 2600) * (620 + correction) + 5000) / 10000;
+    return (min((uint32_t)kmh_x10, 2600u) * (620 + correction) + 5000) / 10000;
 }
 
 void canSendSpeed() {
@@ -613,18 +615,18 @@ void canSendFuel() {
     if (fuel < 0.0f) fuel = 0.0f;
 
     float delta = fuel - previousFuel;
-    bool refueling = false;
 
     if (delta > maxDelta) {
         fuel = previousFuel + maxDelta;
-        refueling = true;
+        refuelingCounter = refuelingCounterCycles;
+        digitalWrite(REFUELING_LED_PIN, HIGH);
     } else if (delta < -maxDelta) {
         fuel = previousFuel - maxDelta;
-        refueling = true;
+        refuelingCounter = refuelingCounterCycles;
+        digitalWrite(REFUELING_LED_PIN, HIGH);
     }
 
     previousFuel = fuel;
-    digitalWrite(REFUELING_LED_PIN, refueling ? HIGH : LOW);
 
     // Fuel gauge is not linear so match it here
     uint16_t levelLeft = interpolateFuel(fuel, fuelTableLeft);
@@ -897,14 +899,14 @@ void handle1B4(const uint8_t* data) {
 }
 
 void handle330(const uint8_t* data) {
-    uint8_t avgFuel = data[3];
+    avgFuelFromCluster = data[3];
     uint8_t left = data[4];
     uint8_t right = data[5];
     uint16_t rawRange = (data[7] << 8) | data[6];
     uint16_t range = rawRange / 16;
 
     pc.printf("[CAN330] AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
-        avgFuel, left, right, range);
+        avgFuelFromCluster, left, right, range);
 }
 
 void handle2C0(const uint8_t* data) {
@@ -916,9 +918,7 @@ static const CanHandlerEntry handler_table[] = {
 #ifdef READ_FRAMES_FROM_CLUSTER_1B4
     { 0x000001B4, handle1B4 },
 #endif
-#ifdef READ_FRAMES_FROM_CLUSTER_330
     { 0x00000330, handle330 },
-#endif
 #ifdef READ_FRAMES_FROM_CLUSTER_2C0
     { 0x000002C0, handle2C0 },
 #endif
@@ -975,6 +975,24 @@ void setup() {
     UCSR1A &= ~(1 << U2X1);
     UBRR1 = 8;
 #endif
+}
+
+void checkRefuelingStatus() {
+    static uint8_t avgFuelLast = avgFuelFromCluster;
+
+    if (avgFuelLast == avgFuelFromCluster) {
+        if (refuelingCounter) {
+            refuelingCounter--;
+        }
+    } else {
+        refuelingCounter = refuelingCounterCycles;
+    }
+
+    if (!refuelingCounter) {
+        digitalWrite(REFUELING_LED_PIN, LOW);
+    }
+
+    avgFuelLast = avgFuelFromCluster;
 }
 
 void loop() {
@@ -1042,6 +1060,7 @@ void loop() {
         // Send every 1 s
         if (canCounter % 100 == 35) {
             queuePush(canSendTime);
+            checkRefuelingStatus();
         }
         // Send every 10 s
         if (canCounter % 1000 == 47) {
@@ -1064,7 +1083,5 @@ void loop() {
     readSerial();
     parseTelemetryLine();
 
-#ifdef READ_FRAMES_FROM_CLUSTER
     readCANSerial();
-#endif
 }
