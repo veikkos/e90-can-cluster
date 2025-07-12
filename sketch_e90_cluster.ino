@@ -98,7 +98,7 @@ enum ErrorLightID : uint16_t {
     DSC_TRIANGLE_DOUBLE = 36,
     DSC_TRIANGLE_SYMBOL_ONLY = 215,
     FOOT_TO_BRAKE = 244,
-    GEAR_ISSUE = 348,
+    GEARBOX_ISSUE_YELLOW = 288,
     OIL_RED = 212,
     BATTERY_RED = 213,
     SOS_ERROR = 299,
@@ -164,6 +164,9 @@ struct SInput {
     bool brake_temp = false;
     bool radiator_warn = false;
     bool engine_running = true;
+    bool yellow_triangle = false;
+    bool red_triangle = false;
+    bool gear_issue = false;
 
     struct {
         bool fl_deflated = false;
@@ -190,7 +193,7 @@ struct SInput {
 SInput s_input;
 
 // Serial RX buffer
-#define FRAME_LENGTH 31
+#define FRAME_LENGTH 32
 char rx_buf[FRAME_LENGTH];
 size_t rx_pos = 0;
 bool line_ready = false;
@@ -325,6 +328,11 @@ void parseTelemetryLine() {
 
     s_input.light_tc_disabled  = flags & (1UL << 30);
     s_input.light_esc_disabled = flags & (1UL << 31);
+
+    uint8_t flagsExt = p[idx++];
+    s_input.yellow_triangle = flagsExt & (1UL << 0);
+    s_input.red_triangle    = flagsExt & (1UL << 1);
+    s_input.gear_issue      = flagsExt & (1UL << 2);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -797,6 +805,9 @@ DEFINE_CAN_SEND_SYMBOL(canSendDoorOpenRight, shouldShowDoorOpenRightWarning(), D
 DEFINE_CAN_SEND_SYMBOL(canSendTailgateOpen, s_input.doors.tailgate_open, BOOT_OPEN, 25, 15)
 DEFINE_CAN_SEND_SYMBOL(canSendEscDisabledSymbol, s_input.light_esc_disabled, DSC_TRIANGLE_DOUBLE, 25, 16)
 DEFINE_CAN_SEND_SYMBOL(canSendBeaconSymbol, s_input.light_beacon, ALARM_LIGHT, 25, 17)
+DEFINE_CAN_SEND_SYMBOL(canSendYellowTriangle, s_input.yellow_triangle, YELLOW_TRIANGLE, 25, 18)
+DEFINE_CAN_SEND_SYMBOL(canSendRedTriangle, s_input.red_triangle, RED_TRIANGLE, 25, 19)
+DEFINE_CAN_SEND_SYMBOL(canSendGearIssue, s_input.gear_issue, GEARBOX_ISSUE_YELLOW, 25, 20)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
@@ -1051,6 +1062,9 @@ void loop() {
             queuePush(canSendTailgateOpen);
             queuePush(canSendEscDisabledSymbol);
             queuePush(canSendBeaconSymbol);
+            queuePush(canSendYellowTriangle);
+            queuePush(canSendRedTriangle);
+            queuePush(canSendGearIssue);
         }
         // Send every 500 ms
         if (canCounter % 50 == 5) {
