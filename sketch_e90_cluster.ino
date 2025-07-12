@@ -168,7 +168,7 @@ struct SInput {
     bool yellow_triangle = false;
     bool red_triangle = false;
     bool gear_issue = false;
-    bool brake_red = false;
+    bool exclamation_mark = false;
 
     struct {
         bool fl_deflated = false;
@@ -332,10 +332,10 @@ void parseTelemetryLine() {
     s_input.light_esc_disabled = flags & (1UL << 31);
 
     uint8_t flagsExt = p[idx++];
-    s_input.yellow_triangle = flagsExt & (1UL << 0);
-    s_input.red_triangle    = flagsExt & (1UL << 1);
-    s_input.gear_issue      = flagsExt & (1UL << 2);
-    s_input.brake_red       = flagsExt & (1UL << 3);
+    s_input.yellow_triangle  = flagsExt & (1UL << 0);
+    s_input.red_triangle     = flagsExt & (1UL << 1);
+    s_input.gear_issue       = flagsExt & (1UL << 2);
+    s_input.exclamation_mark = flagsExt & (1UL << 3);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -811,7 +811,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendBeaconSymbol, s_input.light_beacon, ALARM_LIGHT, 2
 DEFINE_CAN_SEND_SYMBOL(canSendYellowTriangle, s_input.yellow_triangle, YELLOW_TRIANGLE, 25, 18)
 DEFINE_CAN_SEND_SYMBOL(canSendRedTriangle, s_input.red_triangle, RED_TRIANGLE, 25, 19)
 DEFINE_CAN_SEND_SYMBOL(canSendGearIssue, s_input.gear_issue, GEARBOX_ISSUE_YELLOW, 25, 20)
-DEFINE_CAN_SEND_SYMBOL(canSendBrakeRed, s_input.brake_red, BRAKE_SYMBOL_RED, 25, 21)
+DEFINE_CAN_SEND_SYMBOL(canSendExclamationMark, s_input.exclamation_mark, EXCLAMATION_MARK_YELLOW, 25, 21)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
@@ -1069,7 +1069,7 @@ void loop() {
             queuePush(canSendYellowTriangle);
             queuePush(canSendRedTriangle);
             queuePush(canSendGearIssue);
-            queuePush(canSendBrakeRed);
+            queuePush(canSendExclamationMark);
         }
         // Send every 500 ms
         if (canCounter % 50 == 5) {

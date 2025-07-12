@@ -172,7 +172,7 @@ Bit 31 : DL_ESC_DISABLED  (ESC disabled)
 Bit  0 : DL_EXT_YELLOW_TRIANGLE  (Generic warning, yellow)
 Bit  1 : DL_EXT_RED_TRIANGLE     (Generic warning, red)
 Bit  2 : DL_EXT_GEARBOX_ISSUE    (Gearbox issue)
-Bit  3 : DL_EXT_BRAKE_RED        (Generic red brake symbol)
+Bit  3 : DL_EXT_EXCLAMATION_MARK (Generic exclamation mark)
 ```
 
 ## Serial CAN bus adapter settings
