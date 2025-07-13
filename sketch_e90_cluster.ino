@@ -582,7 +582,7 @@ FuelLevelPoint fuelTableLeft[] = {
     {0.75f, 6250},
     {0.50f, 3600},
     {0.25f, 1950},
-    {0.00f,  650}
+    {0.00f,  625}
 };
 
 FuelLevelPoint fuelTableRight[] = {
@@ -591,7 +591,7 @@ FuelLevelPoint fuelTableRight[] = {
     {0.75f, 4600},
     {0.50f, 3350},
     {0.25f, 2200},
-    {0.00f, 1000}
+    {0.00f, 950}
 };
 
 // This is bit heavy floating point calculation but fine for now
