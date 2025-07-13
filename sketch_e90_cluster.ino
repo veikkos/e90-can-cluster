@@ -595,8 +595,8 @@ FuelLevelPoint fuelTableRight[] = {
 };
 
 // This is bit heavy floating point calculation but fine for now
-uint16_t interpolateFuel(float percent, struct FuelLevelPoint table[5]) {
-    for (int i = 0; i < 4; ++i) {
+uint16_t interpolateFuel(float percent, struct FuelLevelPoint table[], int size) {
+    for (int i = 0; i < size - 1; ++i) {
         if (percent >= table[i + 1].fuel_percent) {
             float range = table[i].fuel_percent - table[i + 1].fuel_percent;
             float alpha = (percent - table[i + 1].fuel_percent) / range;
@@ -605,7 +605,7 @@ uint16_t interpolateFuel(float percent, struct FuelLevelPoint table[5]) {
         }
     }
 
-    return table[4].meter_level; // fallback for <0%
+    return table[size - 1].meter_level; // fallback for <0%
 }
 
 inline float currentFuelToFloat() {
@@ -640,13 +640,13 @@ void canSendFuel() {
     previousFuel = fuel;
 
     // Fuel gauge is not linear so match it here
-    uint16_t levelLeft = interpolateFuel(fuel, fuelTableLeft);
+    uint16_t levelLeft = interpolateFuel(fuel, fuelTableLeft, sizeof(fuelTableLeft) / sizeof(fuelTableLeft[0]));
 
     frame[0] = levelLeft & 0xFF;
     frame[1] = (levelLeft >> 8);
 
     // There are two sensors
-    uint16_t levelRight = interpolateFuel(fuel, fuelTableRight);
+    uint16_t levelRight = interpolateFuel(fuel, fuelTableRight, sizeof(fuelTableRight) / sizeof(fuelTableRight[0]));
 
     frame[2] = levelRight & 0xFF;
     frame[3] = (levelRight >> 8);
