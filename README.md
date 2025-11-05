@@ -102,7 +102,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 ## The API
 
-The cluster is controlled over a virtual serial port using a compact **binary protocol**. The baud rate is **921600**. Framed starts with (`'S'`) and ends with (`'E'`) marker bytes.
+The cluster is controlled over a virtual serial port using a compact **binary protocol**. The (virtual) baud rate is set to **921600**.
 
 ### Frame Structure (Little Endian)
 
