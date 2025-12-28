@@ -62,8 +62,10 @@ The code is able to control following things on the cluster
     - Doors open while on gear
     - Tailgate open
     - ... and more
-- Water temperature
+- Coolant temperature
     - Visible in debug menu only ([instructions](https://www.youtube.com/watch?v=7exeRgWtkt4&ab_channel=BossM5))
+- Oil temperature
+    - Visible with higher trim clusters only
 - Oil level
     - Fixed value for now, but could be made dynamic
 - Time and date
@@ -118,19 +120,20 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 7      | 2    | `rpm`               | 0–65535                              |
 | 9      | 2    | `speed`             | km/h × 10 (e.g. 853 = 85.3 km/h)     |
 | 11     | 1    | `gear`              | 0 = R, 1 = N, 2+ = forward gears     |
-| 12     | 1    | `engine temp`       | °C                                   |
-| 13     | 2    | `fuel`              | 0–1000 (% × 10)                      |
-| 15     | 4    | `showlights`        | Bitfield of all light states (see tables below) |
-| 16     | 4    | `showlightsExt`     | Bitfield of all light states (see tables below) |
-| 20     | 2    | `fuel injection`    | microliters per 100 ms               |
-| 22     | 2    | `custom light`      | Symbol ID (0–65535)                  |
-| 24     | 1    | `custom light on`   | 1 = show, 0 = off                    |
-| 25     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
-| 26     | 2    | `cruise speed`      | km/h × 10                            |
-| 28     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
-| 29     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
-| 30     | 1    | `engine running`    | 1 = on, 0 = off                      |
-| 31     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
+| 12     | 1    | `water temp`        | °C                                   |
+| 13     | 1    | `oil temp`          | °C                                   |
+| 14     | 2    | `fuel`              | 0–1000 (% × 10)                      |
+| 16     | 4    | `showlights`        | Bitfield of all light states (see tables below) |
+| 17     | 4    | `showlights ext`    | Bitfield of all light states (see tables below) |
+| 21     | 2    | `fuel injection`    | microliters per 100 ms               |
+| 23     | 2    | `custom light`      | Symbol ID (0–65535)                  |
+| 25     | 1    | `custom light on`   | 1 = show, 0 = off                    |
+| 26     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
+| 27     | 2    | `cruise speed`      | km/h × 10                            |
+| 29     | 1    | `cruise enabled`    | 1 = on, 0 = off                      |
+| 20     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
+| 31     | 1    | `engine running`    | 1 = on, 0 = off                      |
+| 32     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
 
 ### `showlights` Breakdown
 
@@ -167,7 +170,7 @@ Bit 30 : DL_TC_DISABLED   (Traction control disabled)
 Bit 31 : DL_ESC_DISABLED  (ESC disabled)
 ```
 
-### `showlightsExt` Breakdown
+### `showlights ext` Breakdown
 
 ```
 Bit  0 : DL_EXT_YELLOW_TRIANGLE  (Generic warning, yellow)

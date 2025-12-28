@@ -143,6 +143,7 @@ struct SInput {
     uint16_t fuel = 1000;
     uint16_t fuel_injection = 0;
     uint8_t water_temp = 0;
+    uint8_t oil_temp = 0;
     uint16_t custom_light = 0;
 
     bool custom_light_on = false;
@@ -195,7 +196,7 @@ struct SInput {
 SInput s_input;
 
 // Serial RX buffer
-#define FRAME_LENGTH 32
+#define FRAME_LENGTH 33
 char rx_buf[FRAME_LENGTH];
 size_t rx_pos = 0;
 bool line_ready = false;
@@ -267,6 +268,7 @@ void parseTelemetryLine() {
 
     uint8_t gear        = p[idx++];
     s_input.water_temp  = p[idx++];
+    s_input.oil_temp    = p[idx++];
     s_input.fuel        = parse_u16(&p[idx]); idx += 2;
 
     uint32_t flags      = parse_u32(&p[idx]); idx += 4;
@@ -502,6 +504,7 @@ void canSendEngineTempAndFuelInjection() {
     static uint16_t fuel_injection_total = 0;
 
     frame[0] = s_input.water_temp + 48;
+    frame[1] = s_input.oil_temp + 48;
 
     // Update alive counter (lower 4 bits)
     static uint8_t alive_counter = 0;
