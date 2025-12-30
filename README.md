@@ -9,7 +9,11 @@ __NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the scre
 [![Video demo](./media/highlight.jpg)](https://www.youtube.com/watch?v=nLnR1HzLEew)
 _Click the image to see a video demo_
 
-The cluster I have is a km/h model from a car __with an automatic gearbox__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
+The clusters I have are a km/h model from cars __with an automatic gearbox__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
+
+Below is a cluster variant with working oil temperature gauge.
+
+![Cluster with oil temperature gauge](./media/highlight-oil-temp.jpg)
 
 ## The setup
 
@@ -41,7 +45,8 @@ The code is able to control following things on the cluster
 - Fuel gauge
     - Relatively well calibrated
     - Low fuel warning is automatic based on the level
-- Current fuel consumption needle
+- Instant fuel consumption
+    - Gauge or display depending on the cluster
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
     - Current selection (P, R, N, D)
