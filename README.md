@@ -17,13 +17,16 @@ Below is a cluster variant with working oil temperature gauge.
 
 ## The setup
 
+__Note:__ The setup is _not_ SimHub compatible but uses fully custom solution to allow complete customisation.
+
 The setup is a bit convoluted but currently it consists of the following parts:
 - [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
-    - This BeamNG plugin provides the game telemetry via UDP socket
+    - This BeamNG plugin provides the game telemetry via an UDP socket
 - [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/e90-can-cluster-proxy)
+    - This is the "SimHub" equivalent of this setup
     - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
     - The proxy supports **BeamNG**, **Euro Truck Simulator 2** and **American Truck Simulator**
-    - It could be possible to get rid of this proxy and send the telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
+    - It could be possible to get rid of this proxy and send e.g. BeamNG telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
 - This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
 
 ## Current capabilities
@@ -55,7 +58,6 @@ The code is able to control following things on the cluster
 - Cruise control
 - Warnings ([see also](#notes-and-findings))
     - Check engine
-    - Battery light
     - Low oil pressure
     - Traction control
     - Stability control
@@ -63,6 +65,7 @@ The code is able to control following things on the cluster
     - High clutch temperature
     - High brake temperature
     - Tire deflated (individual, all)
+        - It depends on the cluster unit if it supports the individual tire monitoring
     - Radiator warning
     - Doors open while on gear
     - Tailgate open
