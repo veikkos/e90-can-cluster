@@ -35,6 +35,7 @@ The code is able to control following things on the cluster
 
 - Speedometer
     - This needed to be "calibrated", see the code
+    - See `MAX_SPEED_KMH_X10` for setting the max speed range depending on the cluster
 - RPM
 - Indicators
 - Backlight
@@ -48,12 +49,16 @@ The code is able to control following things on the cluster
 - Fuel gauge
     - Relatively well calibrated
     - Low fuel warning is automatic based on the level
+    - See `REFUELING_LED_PIN` which can be used for a led indicating refueling
+        - Refueling (change of fuel level) is done slowly as it seems to work most reliably that way
+        - The level change works best if the ignition is turned off during refueling
 - Instant fuel consumption
     - Gauge or display depending on the cluster
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
     - Current selection (P, R, N, D)
     - Manual mode (M1, M2...)
+        - See `NUMBER_OF_GEARS` and set it as high as the cluster allows before showing error code
     - "Sport" mode
 - Cruise control
 - Warnings ([see also](#notes-and-findings))

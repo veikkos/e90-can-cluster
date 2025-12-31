@@ -17,6 +17,12 @@ uint16_t canCounter = 0;
 // Refueling
 #define REFUELING_LED_PIN 33
 
+// Cluster configuration
+#define NUMBER_OF_GEARS 6
+#define MAX_SPEED_KMH_X10 2800u // e.g. 2600u for 260 km/h
+#define SPEED_CALIBRATION 30 // This value is empirically set so the speed matches on this particular cluster
+#define MAX_RPM 8000
+
 uint8_t avgFuelFromCluster = 0;
 const unsigned int refuelingCounterCycles = 2;
 unsigned int refuelingCounter = 0;
@@ -90,10 +96,10 @@ enum ErrorLightID : uint16_t {
     BATTERY_YELLOW = 161,
     EXCLAMATION_MARK_YELLOW = 169,
     DTC_DOUBLE_BLINKING = 184,
-    LOW_TIRE_PRESSURE_FRONT_LEFT = 139,
-    LOW_TIRE_PRESSURE_REAR_RIGHT = 140,
-    LOW_TIRE_PRESSURE_REAR_LEFT = 141,
-    LOW_TIRE_PRESSURE_FRONT_RIGHT = 143,
+    LOW_TIRE_PRESSURE_FRONT_LEFT = 139,  // Tire specific light availability depends on the cluster
+    LOW_TIRE_PRESSURE_REAR_RIGHT = 140,  // ^
+    LOW_TIRE_PRESSURE_REAR_LEFT = 141,   // ^
+    LOW_TIRE_PRESSURE_FRONT_RIGHT = 143, // ^
     LOW_TIRE_PRESSURE_ALL = 147,
     DSC_TRIANGLE_DOUBLE = 36,
     DSC_TRIANGLE_SYMBOL_ONLY = 215,
@@ -367,7 +373,7 @@ void parseTelemetryLine() {
         s_input.currentGear = DRIVE;
         s_input.mode = NORMAL;
     } else {
-        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, 6));
+        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, NUMBER_OF_GEARS));
         s_input.currentGear = DRIVE;
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
@@ -406,7 +412,7 @@ void canSendIgnitionFrame() {
 
 void canSendRPM() {
     const uint32_t ID = 0x00AA;
-    uint16_t rpm_val = min(s_input.rpm, (uint16_t)7500) * 4;
+    uint16_t rpm_val = min(s_input.rpm, (uint16_t)MAX_RPM) * 4;
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
                        0x80, 0x99};
@@ -414,7 +420,7 @@ void canSendRPM() {
 }
 
 inline uint16_t kmhx10ToMph(uint16_t kmh_x10, uint32_t correction) {
-    return (min((uint32_t)kmh_x10, 2600u) * (620 + correction) + 5000) / 10000;
+    return (min((uint32_t)kmh_x10, MAX_SPEED_KMH_X10) * (620 + correction) + 5000) / 10000;
 }
 
 void canSendSpeed() {
@@ -422,8 +428,7 @@ void canSendSpeed() {
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
-    const int calibration = 30; // This value is empirically set so the speed matches on this particular cluster
-    uint16_t speed_mph = kmhx10ToMph(s_input.speed, calibration);
+    uint16_t speed_mph = kmhx10ToMph(s_input.speed, SPEED_CALIBRATION);
     uint16_t current_speed_counter = speed_mph + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
