@@ -56,10 +56,10 @@ The code is able to control following things on the cluster
     - Gauge or display depending on the cluster
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
+    - See `NUMBER_OF_GEARS` and set it as high as the cluster allows before showing error code
     - Current selection (P, R, N, D)
     - Manual mode (M1, M2...)
-        - See `NUMBER_OF_GEARS` and set it as high as the cluster allows before showing error code
-    - "Sport" mode
+    - "Sport" automatic mode (Sport D1, Sport D2...)
 - Cruise control
 - Warnings ([see also](#notes-and-findings))
     - Check engine

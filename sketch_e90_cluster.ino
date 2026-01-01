@@ -731,14 +731,14 @@ void canSendGearboxData() {
     uint8_t byte1 = 0x0F;
     if (s_input.manualGear != NONE) {
         switch (s_input.manualGear) {
-            case M1: byte1 = 0x5F; break;
-            case M2: byte1 = 0x6F; break;
-            case M3: byte1 = 0x7F; break;
-            case M4: byte1 = 0x8F; break;
-            case M5: byte1 = 0x9F; break;
-            case M6: byte1 = 0xAF; break;
-            case M7: byte1 = 0xBF; break;
-            default: byte1 = 0x0F; break;
+            case M1: byte1 = 0x50; break;
+            case M2: byte1 = 0x60; break;
+            case M3: byte1 = 0x70; break;
+            case M4: byte1 = 0x80; break;
+            case M5: byte1 = 0x90; break;
+            case M6: byte1 = 0xA0; break;
+            case M7: byte1 = 0xB0; break;
+            default: byte1 = 0x00; break;
         }
     }
 
@@ -758,8 +758,8 @@ void canSendGearboxData() {
         counter_high = (counter_high + 1) % 15;
     }
 
-    // Byte 4 – Drive mode (F0 = Drive, F2 = Drive Sport)
-    uint8_t byte4 = s_input.manualGear != NONE ? 0xF2 : 0xF0;
+    // Byte 4 – Needed like that so that "D", "Sport D1" and "M1" etc. work correctly
+    uint8_t byte4 = s_input.mode != SPORT && s_input.manualGear != NONE ? 0xF2 : 0xF0;
 
     // Byte 5 – Always 0xFF
     uint8_t byte5 = 0xFF;
