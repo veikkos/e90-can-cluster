@@ -61,6 +61,7 @@ The code is able to control following things on the cluster
     - Manual mode (M1, M2...)
     - "Sport" automatic mode (Sport D1, Sport D2...)
 - Cruise control
+    - Also Adaptive Cruise Control! Although there is currently no game which would expose it...
 - Warnings ([see also](#notes-and-findings))
     - Check engine
     - Low oil pressure

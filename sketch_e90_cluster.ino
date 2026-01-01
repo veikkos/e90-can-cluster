@@ -195,8 +195,17 @@ struct SInput {
 
     bool handbrake = false;
 
-    bool cruise_enabled = false;
-    uint16_t cruise_speed = 0;
+    struct {
+        bool enabled = false;
+        uint16_t speed = 0;
+
+        struct {
+            uint8_t distance = 0; // 0: no ACC, 1-4: distances from short to far
+            bool yellow_car_static = false;
+            bool foot_on_brake = false;
+            bool red_car_blinking = false;
+        } acc;
+    } cruise;
 };
 
 SInput s_input;
@@ -349,8 +358,8 @@ void parseTelemetryLine() {
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light_on  = p[idx++] != 0;
     uint8_t gearMode         = p[idx++];
-    s_input.cruise_speed     = parse_u16(&p[idx]) / 10; idx += 2;
-    s_input.cruise_enabled   = p[idx++] != 0;
+    s_input.cruise.speed     = parse_u16(&p[idx]) / 10; idx += 2;
+    s_input.cruise.enabled   = p[idx++] != 0;
 
     s_input.ignition         = (IGNITION_STATE)p[idx++];
     s_input.engine_running   = p[idx++] != 0;
@@ -875,20 +884,38 @@ void canSendCruiseControl() {
     static uint8_t last_kmh = 0xFE;
     static bool last_enabled = false;
 
-    uint8_t kmh = s_input.cruise_enabled ? min(s_input.cruise_speed, (uint16_t)250) : 0xFE;
-    uint8_t cruise_status = s_input.cruise_enabled ? 0xF4 : 0xF1; // 0xF5 for mph!
-    uint8_t cc_flag = s_input.cruise_enabled ? 0x58 : 0x50;
-    uint8_t speed_update = (kmh != last_kmh || s_input.cruise_enabled != last_enabled) ? 0x01 : 0x00;
+    uint8_t kmh = s_input.cruise.enabled ? min(s_input.cruise.speed, (uint16_t)250) : 0xFE;
+    uint8_t cruise_status = s_input.cruise.enabled ? 0xF4 : 0xF1; // 0xF5 for mph!
+    uint8_t cc_flag = s_input.cruise.enabled ? 0x58 : 0x50;
+    uint8_t speed_update = (kmh != last_kmh || s_input.cruise.enabled != last_enabled) ? 0x01 : 0x00;
+    uint8_t byte3 = 0;
+    uint8_t byte4 = 0;
+
+    if (s_input.cruise.acc.distance) {
+        cc_flag |= s_input.cruise.acc.distance + 1;
+    }
+
+    if (s_input.cruise.acc.yellow_car_static) {
+        byte3 |= 0x10;
+    }
+
+    if (s_input.cruise.acc.foot_on_brake) {
+        byte3 |= 0x20;
+    }
+
+    if (s_input.cruise.acc.red_car_blinking) {
+        byte4 |= 0x01;
+    }
 
     last_kmh = kmh;
-    last_enabled = s_input.cruise_enabled;
+    last_enabled = s_input.cruise.enabled;
 
     uint8_t frame[8] = {
         getCruiseTimer(100),
         kmh,
         cruise_status,
-        0x00,
-        0xF8,
+        byte3,
+        byte4,
         cc_flag,
         speed_update,
         0x00
