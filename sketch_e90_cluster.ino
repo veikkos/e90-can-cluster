@@ -18,7 +18,7 @@ uint16_t canCounter = 0;
 #define REFUELING_LED_PIN 33
 
 // Cluster configuration
-#define NUMBER_OF_GEARS 6
+#define NUMBER_OF_GEARS 7
 #define MAX_SPEED_KMH_X10 2800u // e.g. 2600u for 260 km/h
 #define SPEED_CALIBRATION 30 // This value is empirically set so the speed matches on this particular cluster
 #define MAX_RPM 8000
@@ -56,7 +56,7 @@ enum GEAR {
 };
 
 enum GEAR_MANUAL {
-    NONE = 0, M1, M2, M3, M4, M5, M6
+    NONE = 0, M1, M2, M3, M4, M5, M6, M7
 };
 
 enum GEAR_MODE {
@@ -737,6 +737,7 @@ void canSendGearboxData() {
             case M4: byte1 = 0x8F; break;
             case M5: byte1 = 0x9F; break;
             case M6: byte1 = 0xAF; break;
+            case M7: byte1 = 0xBF; break;
             default: byte1 = 0x0F; break;
         }
     }
