@@ -359,7 +359,12 @@ void parseTelemetryLine() {
     s_input.custom_light_on  = p[idx++] != 0;
     uint8_t gearMode         = p[idx++];
     s_input.cruise.speed     = parse_u16(&p[idx]) / 10; idx += 2;
-    s_input.cruise.enabled   = p[idx++] != 0;
+
+    uint8_t cruiseMode       = p[idx++];
+    s_input.cruise.enabled   = cruiseMode & 0x01;
+    s_input.cruise.acc.yellow_car_static = (cruiseMode & 0x02) != 0;
+    uint8_t distanceCode = (cruiseMode >> 2) & 0x07;
+    s_input.cruise.acc.distance = (distanceCode >= 1 && distanceCode <= 4) ? distanceCode : 0;
 
     s_input.ignition         = (IGNITION_STATE)p[idx++];
     s_input.engine_running   = p[idx++] != 0;
