@@ -358,7 +358,7 @@ void parseTelemetryLine() {
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light_on  = p[idx++] != 0;
     uint8_t gearMode         = p[idx++];
-    s_input.cruise.speed     = parse_u16(&p[idx]) / 10; idx += 2;
+    s_input.cruise.speed     = parse_u16(&p[idx]); idx += 2;
 
     uint8_t cruiseMode       = p[idx++];
     s_input.cruise.enabled   = cruiseMode & 0x01;
