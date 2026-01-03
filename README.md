@@ -144,7 +144,7 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 25     | 1    | `custom light on`   | 1 = show, 0 = off                    |
 | 26     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
 | 27     | 2    | `cruise speed`      | km/h                                 |
-| 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Adaptive: Has vehicle ahead, Bits 2-4: Adaptive: Following time (1-4) |
+| 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Vehicle ahead, Bit 2: Collision warning, Bits 3-5: Adaptive cruise following distance (1-4) |
 | 20     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 31     | 1    | `engine running`    | 1 = on, 0 = off                      |
 | 32     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
