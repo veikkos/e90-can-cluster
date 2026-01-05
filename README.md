@@ -81,7 +81,7 @@ The code is able to control following things on the cluster
 - Oil temperature
     - Visible with higher trim clusters only
 - Oil level
-    - Fixed value for now, but could be made dynamic
+    - Set to show OK unless oil pressure light is on
 - Time and date
 - Suppress warning symbols
     - ABS
