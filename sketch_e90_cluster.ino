@@ -859,11 +859,14 @@ void canSendOilLevel() {
     const uint32_t ID = 0x381;
     static uint8_t frame[8] = {0, 0, 0xFF, 0, 0, 0, 0, 0};
 
-    // Following values are not exactly clear but some of these combinations work
-
+    // below min: 0x0C
     // min: 0x19
+    // between min and middle: 0x26
     // middle: 0x35
-    frame[0] = s_input.oil_warn ? 0x19 : 0x35;
+    // between middle and max: 0x45
+    // max: 0x55
+    // above max: 0x5F
+    frame[0] = s_input.oil_warn ? 0x0C : 0x35;
     // >MAX: e.g. 0xF1
     // OK: 0xF0
     // +1l: 0xF2
