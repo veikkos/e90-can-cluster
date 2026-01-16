@@ -126,6 +126,8 @@ enum ErrorLightID : uint16_t {
     ALARM_LIGHT_EXCLAMATION = 162,
     ALARM_LIGHT = 508,
     BRAKE_SYMBOL_RED = 308,
+    ADBLUE_REFILL_RED = 640,
+    ADBLUE_REFILL_YELLOW = 643
     // What's there on 400 and beyond...?
 };
 
@@ -176,6 +178,7 @@ struct SInput {
     bool red_triangle = false;
     bool gear_issue = false;
     bool exclamation_mark = false;
+    bool adblue_low = false;
 
     struct {
         bool fl_deflated = false;
@@ -353,6 +356,7 @@ void parseTelemetryLine() {
     s_input.red_triangle     = flagsExt & (1UL << 1);
     s_input.gear_issue       = flagsExt & (1UL << 2);
     s_input.exclamation_mark = flagsExt & (1UL << 3);
+    s_input.adblue_low       = flagsExt & (1UL << 4);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
@@ -836,6 +840,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendYellowTriangle, s_input.yellow_triangle, YELLOW_TR
 DEFINE_CAN_SEND_SYMBOL(canSendRedTriangle, s_input.red_triangle, RED_TRIANGLE, 25, 19)
 DEFINE_CAN_SEND_SYMBOL(canSendGearIssue, s_input.gear_issue, GEARBOX_ISSUE_YELLOW, 25, 20)
 DEFINE_CAN_SEND_SYMBOL(canSendExclamationMark, s_input.exclamation_mark, EXCLAMATION_MARK_YELLOW, 25, 21)
+DEFINE_CAN_SEND_SYMBOL(canSendAdblueLow, s_input.adblue_low, ADBLUE_REFILL_YELLOW, 25, 22)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
@@ -1119,6 +1124,7 @@ void loop() {
             queuePush(canSendRedTriangle);
             queuePush(canSendGearIssue);
             queuePush(canSendExclamationMark);
+            queuePush(canSendAdblueLow);
         }
         // Send every 500 ms
         if (canCounter % 50 == 5) {
