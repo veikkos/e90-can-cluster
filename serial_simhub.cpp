@@ -34,14 +34,20 @@ static void parseToken(char* t) {
         if (g <= 0) {
             s_input.currentGear = NEUTRAL;
             s_input.manualGear = NONE;
+            s_input.mode = NORMAL;
         } else {
             s_input.currentGear = DRIVE;
             s_input.manualGear = (GEAR_MANUAL)min(g, NUMBER_OF_GEARS);
+            s_input.mode = NORMAL;
         }
     } else if (strncmp(t, "FUEL=", 5) == 0) {
         s_input.fuel = constrain(atoi(t + 5), 0, 1000);
     } else if (strncmp(t, "OIL=", 4) == 0) {
         s_input.oil_temp = atoi(t + 4);
+    } else if (strncmp(t, "IGN=", 4) == 0) {
+        int ign = atoi(t + 4);
+        s_input.ignition = ign ? IG_ON : IG_OFF;
+        s_input.engine_running = ign && s_input.rpm > 0;
     }
 }
 
@@ -58,7 +64,6 @@ void simHubSerialParse() {
         p = nullptr;
     }
 
-    s_input.ignition = IG_ON;
     s_input.engine_running = s_input.rpm > 0;
     s_input.light_lowbeam = true;
 }

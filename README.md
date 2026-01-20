@@ -17,7 +17,13 @@ Below is a cluster variant with working oil temperature gauge.
 
 ## The setup
 
-__Note:__ The setup is _not_ SimHub compatible but uses fully custom solution to allow complete customisation.
+### SimHub
+
+SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code and create a _Custom Serial Device_ in SimHub. Use `simhub/script.js` as the data format.
+
+### Custom solution
+
+The custom solution supports _advanced_ features.
 
 The setup is a bit convoluted but currently it consists of the following parts:
 - [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
