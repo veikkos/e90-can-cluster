@@ -1,13 +1,24 @@
 #include <Arduino.h>
 #include <math.h>
+#include "types.h"
+#include "serial.h"
+#include "cluster.h"
+
+// Use SimHub format by enabling below define
+//#define USE_SIMHUB_ASCII
+
+#if defined(USE_SIMHUB_ASCII)
+    #include "serial_simhub.h"
+#else
+    #include "serial_binary.h"
+#endif
 
 // Config defines
 //#define READ_FRAMES_FROM_CLUSTER_1B4
 //#define READ_FRAMES_FROM_CLUSTER_2C0
 
-// Serial interfaces
+// CAN interface
 #define canSerial Serial1
-#define pc Serial
 
 // Timers
 uint32_t lastTime = 0;
@@ -16,12 +27,6 @@ uint16_t canCounter = 0;
 
 // Refueling
 #define REFUELING_LED_PIN 33
-
-// Cluster configuration
-#define NUMBER_OF_GEARS 7
-#define MAX_SPEED_KMH_X10 2800u // e.g. 2600u for 260 km/h
-#define SPEED_CALIBRATION 30 // This value is empirically set so the speed matches on this particular cluster
-#define MAX_RPM 8000
 
 uint8_t avgFuelFromCluster = 0;
 const unsigned int refuelingCounterCycles = 2;
@@ -32,373 +37,8 @@ unsigned int refuelingCounter = 0;
 #define M_PI 3.14159265358979323846
 #endif
 
-// Enums
-enum INDICATOR {
-    I_OFF = 0,
-    I_LEFT,
-    I_RIGHT,
-    I_HAZZARD
-};
-
-enum CAN_LIGHTS {
-    L_BRAKE = 0x80,
-    L_FOG = 0x40,
-    L_BACKLIGHT = 0x04,
-    L_MAIN = 0x02,
-    L_DIP = 0x20
-};
-
-enum GEAR {
-    PARK = -1,
-    REVERSE = 0,
-    NEUTRAL = 1,
-    DRIVE = 2
-};
-
-enum GEAR_MANUAL {
-    NONE = 0, M1, M2, M3, M4, M5, M6, M7
-};
-
-enum GEAR_MODE {
-    NORMAL,
-    SPORT
-};
-
-enum IGNITION_STATE {
-    IG_OFF = 0,
-    IG_ACCESSORY = 1,
-    IG_ON = 2,
-    IG_STARTER = 3
-};
-
-enum ErrorLightID : uint16_t {
-    BOOT_OPEN = 19,
-    FIX_CAR = 21,
-    YELLOW_WARNING = 24,
-    OIL_LEVEL_LOW = 28,
-    CHECK_ENGINE_DOUBLE = 31,
-    CHECK_ENGINE = 34,
-    DTC_TRIANGLE_DOUBLE_EXCLAMATION_MARK = 35,
-    YELLOW_TRIANGLE = 37,
-    OVERHEAT_RED = 39,
-    START_FOOT_BRAKE = 40,
-    RED_TRIANGLE = 41,
-    ABS_DTC_TRIANGLE_WARNING = 42,
-    SUSPENSION_WARNING = 43,
-    PARTICLE_FILTER = 49,
-    TIRE_PRESSURE_YELLOW = 50,
-    LIMIT_RED = 62,
-    TIRE_PRESSURE_RED = 63,
-    CRUISE_WARNING = 69, // Also 85, 339
-    STEERING_WARNING = 73,
-    LIMIT_YELLOW = 78,
-    COLD_WEATHER = 79,
-    BATTERY_YELLOW = 161,
-    EXCLAMATION_MARK_YELLOW = 169,
-    DTC_DOUBLE_BLINKING = 184,
-    LOW_TIRE_PRESSURE_FRONT_LEFT = 139,  // Tire specific light availability depends on the cluster
-    LOW_TIRE_PRESSURE_REAR_RIGHT = 140,  // ^
-    LOW_TIRE_PRESSURE_REAR_LEFT = 141,   // ^
-    LOW_TIRE_PRESSURE_FRONT_RIGHT = 143, // ^
-    LOW_TIRE_PRESSURE_ALL = 147,
-    DSC_TRIANGLE_DOUBLE = 36,
-    DSC_TRIANGLE_SYMBOL_ONLY = 215,
-    FOOT_TO_BRAKE = 244,
-    GEARBOX_ISSUE_YELLOW = 288,
-    OIL_RED = 212,
-    BATTERY_RED = 213,
-    SOS_ERROR = 299,
-    OVERHEAT_YELLOW = 257,
-    FUEL_WARNING = 275,
-    SERVICE_LIGHT = 281,
-    CAR_AHEAD_YELLOW = 282,
-    CAR_AHEAD_RED = 283,
-    AUTO_GEAR_BOX_YELLOW = 349,
-    DTC_SYMBOL_ONLY = 357,
-    GEARBOX_TEMP_YELLOW = 104,
-    GEARBOX_TEMP_RED = 105,
-    BRAKES_HOT = 353,
-    COOLANT_LOW = 166,
-    CAR_CAN_ROLL = 302,
-    DOOR_OPEN_LEFT = 715,
-    DOOR_OPEN_RIGHT = 716,
-    DSC_OFF = 673,
-    ALARM_LIGHT_EXCLAMATION = 162,
-    ALARM_LIGHT = 508,
-    BRAKE_SYMBOL_RED = 308,
-    ADBLUE_REFILL_RED = 640,
-    ADBLUE_REFILL_YELLOW = 643
-    // What's there on 400 and beyond...?
-};
-
 // Vehicle state structure
-struct SInput {
-    IGNITION_STATE ignition = IG_ON;
-    INDICATOR indicator_state = I_OFF;
-
-    uint16_t time_year = 2010;
-    uint8_t time_month = 1;
-    uint8_t time_day = 1;
-    uint8_t time_hour = 12;
-    uint8_t time_minute = 0;
-    uint8_t time_second = 0;
-
-    uint16_t rpm = 0;
-    uint16_t speed = 0;
-    GEAR currentGear = PARK;
-    GEAR_MANUAL manualGear = NONE;
-    GEAR_MODE mode = SPORT;
-    uint16_t fuel = 1000;
-    uint16_t fuel_injection = 0;
-    uint8_t water_temp = 0;
-    uint8_t oil_temp = 0;
-    uint16_t custom_light = 0;
-
-    bool custom_light_on = false;
-    bool light_shift = false;
-    bool light_highbeam = false;
-    bool light_lowbeam = true;
-    bool light_fog = false;
-    bool light_tc_active = false;
-    bool light_esc_active = false;
-    bool light_tc_disabled = false;
-    bool light_esc_disabled = false;
-    bool light_beacon = false;
-    bool oil_warn = false;
-    bool battery_warn = false;
-    bool abs_warn = false;
-    bool engine_temp_yellow = false;
-    bool engine_temp_red = false;
-    bool check_engine = false;
-    bool clutch_temp = false;
-    bool brake_temp = false;
-    bool radiator_warn = false;
-    bool engine_running = true;
-    bool yellow_triangle = false;
-    bool red_triangle = false;
-    bool gear_issue = false;
-    bool exclamation_mark = false;
-    bool adblue_low = false;
-
-    struct {
-        bool fl_deflated = false;
-        bool fr_deflated = false;
-        bool rl_deflated = false;
-        bool rr_deflated = false;
-        bool all_deflated = false;
-    } tires;
-
-    struct {
-        bool fl_open = false;
-        bool fr_open = false;
-        bool rl_open = false;
-        bool rr_open = false;
-        bool tailgate_open = false;
-    } doors;
-
-    bool handbrake = false;
-
-    struct {
-        bool enabled = false;
-        uint16_t speed = 0;
-
-        struct {
-            uint8_t distance = 0; // 0: no ACC, 1-4: distances from short to far
-            bool yellow_car_static = false;
-            bool foot_on_brake = false;
-            bool red_car_blinking = false;
-        } acc;
-    } cruise;
-};
-
 SInput s_input;
-
-// Serial RX buffer
-#define FRAME_LENGTH 33
-char rx_buf[FRAME_LENGTH];
-size_t rx_pos = 0;
-bool line_ready = false;
-
-void readSerial() {
-    while (pc.available()) {
-        char c = pc.read();
-        if (rx_pos == 0 && c != 'S') {
-            // Waiting for the start character but received something else so ignore it
-        } else if (rx_pos == FRAME_LENGTH - 1) {
-            rx_buf[rx_pos] = c;
-            line_ready = true;
-            rx_pos = 0;
-        } else {
-            rx_buf[rx_pos++] = c;
-        }
-    }
-}
-
-static inline uint16_t parse_u16(const uint8_t* p) {
-    return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
-}
-
-static inline uint32_t parse_u32(const uint8_t* p) {
-    return (uint32_t)p[0]
-         | ((uint32_t)p[1] << 8)
-         | ((uint32_t)p[2] << 16)
-         | ((uint32_t)p[3] << 24);
-}
-
-void parseTelemetryLine() {
-    digitalWrite(LED_BUILTIN, 0);
-
-    if (!line_ready) return;
-    line_ready = false;
-
-    const uint8_t payloadLength = FRAME_LENGTH - 2;
-    const uint8_t* p = (const uint8_t*)rx_buf;
-
-    if (p[0] != 'S') {
-        pc.printf("[UART] Invalid frame marker\n");
-        return;
-    }
-
-    uint8_t checksumReceived = p[payloadLength + 1];
-    uint8_t checksumCalculated = 0;
-
-    for (int i = 1; i < payloadLength + 1; i++) {
-        checksumCalculated = (checksumCalculated + p[i]) & 0xFF;
-    }
-
-    if (checksumCalculated != checksumReceived) {
-        pc.printf("[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
-        return;
-    }
-
-    int idx = 1; // skip 'S'
-
-    // Timestamp
-    s_input.time_year   = p[idx++] + 2000;
-    s_input.time_month  = p[idx++];
-    s_input.time_day    = p[idx++];
-    s_input.time_hour   = p[idx++];
-    s_input.time_minute = p[idx++];
-    s_input.time_second = p[idx++];
-
-    s_input.rpm         = parse_u16(&p[idx]); idx += 2;
-    s_input.speed       = parse_u16(&p[idx]); idx += 2;
-
-    uint8_t gear        = p[idx++];
-    s_input.water_temp  = p[idx++];
-    s_input.oil_temp    = p[idx++];
-    s_input.fuel        = parse_u16(&p[idx]); idx += 2;
-
-    uint32_t flags      = parse_u32(&p[idx]); idx += 4;
-
-    // Parse flags using bitmasks
-    s_input.light_shift      = flags & (1UL << 0);
-    s_input.light_highbeam   = flags & (1UL << 1);
-    s_input.handbrake        = flags & (1UL << 2);
-    s_input.light_tc_active  = flags & (1UL << 4);
-
-    bool left_signal  = flags & (1UL << 5);
-    bool right_signal = flags & (1UL << 6);
-
-    if (left_signal && right_signal)
-        s_input.indicator_state = I_HAZZARD;
-    else if (left_signal)
-        s_input.indicator_state = I_LEFT;
-    else if (right_signal)
-        s_input.indicator_state = I_RIGHT;
-    else
-        s_input.indicator_state = I_OFF;
-
-    s_input.oil_warn           = flags & (1UL << 8);
-    s_input.battery_warn       = flags & (1UL << 9);
-    s_input.abs_warn           = flags & (1UL << 10);
-    s_input.light_beacon       = flags & (1UL << 11);
-    s_input.light_lowbeam      = flags & (1UL << 12);
-    s_input.light_esc_active   = flags & (1UL << 13);
-    s_input.check_engine       = flags & (1UL << 14);
-    s_input.clutch_temp        = flags & (1UL << 15);
-    s_input.light_fog          = flags & (1UL << 16);
-    s_input.brake_temp         = flags & (1UL << 17);
-
-    s_input.tires.fl_deflated = flags & (1UL << 18);
-    s_input.tires.fr_deflated = flags & (1UL << 19);
-    s_input.tires.rl_deflated = flags & (1UL << 20);
-    s_input.tires.rr_deflated = flags & (1UL << 21);
-
-    bool all_deflated = s_input.tires.fl_deflated &&
-                        s_input.tires.fr_deflated &&
-                        s_input.tires.rl_deflated &&
-                        s_input.tires.rr_deflated;
-
-    s_input.tires.all_deflated = all_deflated;
-    if (all_deflated) {
-        s_input.tires.fl_deflated = false;
-        s_input.tires.fr_deflated = false;
-        s_input.tires.rl_deflated = false;
-        s_input.tires.rr_deflated = false;
-    }
-
-    s_input.radiator_warn      = flags & (1UL << 22);
-    s_input.engine_temp_yellow = flags & (1UL << 23);
-    s_input.engine_temp_red    = flags & (1UL << 24);
-
-    s_input.doors.fl_open = flags & (1UL << 25);
-    s_input.doors.fr_open = flags & (1UL << 26);
-    s_input.doors.rl_open = flags & (1UL << 27);
-    s_input.doors.rr_open = flags & (1UL << 28);
-    s_input.doors.tailgate_open = flags & (1UL << 29);
-
-    s_input.light_tc_disabled  = flags & (1UL << 30);
-    s_input.light_esc_disabled = flags & (1UL << 31);
-
-    uint8_t flagsExt = p[idx++];
-    s_input.yellow_triangle  = flagsExt & (1UL << 0);
-    s_input.red_triangle     = flagsExt & (1UL << 1);
-    s_input.gear_issue       = flagsExt & (1UL << 2);
-    s_input.exclamation_mark = flagsExt & (1UL << 3);
-    s_input.adblue_low       = flagsExt & (1UL << 4);
-
-    s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
-    s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
-    s_input.custom_light_on  = p[idx++] != 0;
-    uint8_t gearMode         = p[idx++];
-    s_input.cruise.speed     = parse_u16(&p[idx]); idx += 2;
-
-    uint8_t cruiseMode       = p[idx++];
-    s_input.cruise.enabled   = cruiseMode & 0x01;
-    s_input.cruise.acc.yellow_car_static = (cruiseMode & 0x02) != 0;
-    s_input.cruise.acc.red_car_blinking = (cruiseMode & 0x04) != 0;
-    uint8_t distanceCode = (cruiseMode >> 3) & 0x07;
-    s_input.cruise.acc.distance = (distanceCode >= 1 && distanceCode <= 4) ? distanceCode : 0;
-
-    s_input.ignition         = (IGNITION_STATE)p[idx++];
-    s_input.engine_running   = p[idx++] != 0;
-
-    // Gear logic
-    if (gearMode == 'P') {
-        s_input.manualGear = NONE;
-        s_input.currentGear = PARK;
-        s_input.mode = NORMAL;
-    } else if (gear == NEUTRAL) {
-        s_input.manualGear = NONE;
-        s_input.currentGear = NEUTRAL;
-        s_input.mode = NORMAL;
-    } else if (gear == REVERSE) {
-        s_input.manualGear = NONE;
-        s_input.currentGear = REVERSE;
-        s_input.mode = NORMAL;
-    } else if (gearMode == 'A') {
-        s_input.manualGear = NONE;
-        s_input.currentGear = DRIVE;
-        s_input.mode = NORMAL;
-    } else {
-        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, NUMBER_OF_GEARS));
-        s_input.currentGear = DRIVE;
-        s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
-    }
-
-    digitalWrite(LED_BUILTIN, 1);
-}
 
 void sendCAN(uint32_t id, const uint8_t* data) {
     uint8_t buf[14] = {
@@ -1154,8 +794,13 @@ void loop() {
         }
     }
 
-    readSerial();
-    parseTelemetryLine();
+    #if defined(USE_SIMHUB_ASCII)
+        simHubSerialRead();
+        simHubSerialParse();
+    #else
+        serialRead();
+        serialParse();
+    #endif
 
     readCANSerial();
 }
