@@ -675,7 +675,12 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(REFUELING_LED_PIN, OUTPUT);
 
+#if defined(USE_SIMHUB_ASCII)
+    simHubSetup();
+#else
     pc.begin(921600);
+#endif
+
     canSerial.begin(115200);
 
 #if defined(__AVR_AT90USB1286__)
@@ -796,7 +801,6 @@ void loop() {
 
     #if defined(USE_SIMHUB_ASCII)
         simHubSerialRead();
-        simHubSerialParse();
     #else
         serialRead();
         serialParse();

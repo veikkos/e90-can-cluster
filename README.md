@@ -19,7 +19,7 @@ Below is a cluster variant with working oil temperature gauge.
 
 ### SimHub
 
-SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code and create a _Custom Serial Device_ in SimHub. Use `simhub/script.js` as the data format.
+SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
 
 ### Custom solution
 
