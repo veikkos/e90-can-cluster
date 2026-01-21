@@ -15,7 +15,34 @@ Below is a cluster variant with working oil temperature gauge.
 
 ![Cluster with oil temperature gauge](./media/highlight-oil-temp.jpg)
 
-## The setup
+## Hardware support
+
+Teensy++ 2.0 and 4.1 have been tested. Arduino Nano should also work but the support is experimental.
+
+### CAN adapter
+
+Two adapter types are supported.
+
+#### Serial CAN bus adapter
+
+https://docs.longan-labs.cc/1030001/
+
+- Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
+- Connection should be made RX to TX and TX to RX between the cluster and the Serial CAN bus adapter
+- It's best to set the parameters with one-time-use-only code one at the time and have `while(1);` after the set
+    - Hook up the UART code so that you can see what the adapter responds. It should say `OK` after you set a value
+    - Send `+++` to go to configuration mode
+    - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
+    - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
+- There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
+- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
+- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
+
+#### MCP2515 SPI adapter
+
+Support is experimental. Enable `USE_MCP_CAN` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+
+## The software setup
 
 ### SimHub
 
@@ -199,19 +226,6 @@ Bit  2 : DL_EXT_GEARBOX_ISSUE    (Gearbox issue)
 Bit  3 : DL_EXT_EXCLAMATION_MARK (Generic exclamation mark)
 Bit  4 : DL_EXT_ADBLUE_LOW       (AdBlue level low)
 ```
-
-## Serial CAN bus adapter settings
-
-- Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
-- Connection should be made RX to TX and TX to RX between the cluster and the Serial CAN bus adapter
-- It's best to set the parameters with one-time-use-only code one at the time and have `while(1);` after the set
-    - Hook up the UART code so that you can see what the adapter responds. It should say `OK` after you set a value
-    - Send `+++` to go to configuration mode
-    - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
-    - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
-- There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
-- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
-- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
 
 ## Notes and findings
 

@@ -2,6 +2,7 @@
 #include "types.h"
 #include "serial.h"
 #include "cluster.h"
+#include "pc_printf.h"
 
 extern SInput s_input;
 
@@ -46,7 +47,7 @@ void serialParse() {
     const uint8_t* p = (const uint8_t*)rx_buf;
 
     if (p[0] != 'S') {
-        pc.printf("[UART] Invalid frame marker\n");
+        serial_printf(pc, "[UART] Invalid frame marker\n");
         return;
     }
 
@@ -58,7 +59,7 @@ void serialParse() {
     }
 
     if (checksumCalculated != checksumReceived) {
-        pc.printf("[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
+        serial_printf(pc, "[UART] Checksum mismatch: received %02X, calculated %02X\n", checksumReceived, checksumCalculated);
         return;
     }
 

@@ -3,6 +3,7 @@
 #include "types.h"
 #include "serial.h"
 #include "cluster.h"
+#include "pc_printf.h"
 
 // Use SimHub format by enabling below define
 //#define USE_SIMHUB_ASCII
@@ -18,7 +19,19 @@
 //#define READ_FRAMES_FROM_CLUSTER_2C0
 
 // CAN interface
-#define canSerial Serial1
+//#define USE_MCP_CAN
+
+#if defined(USE_MCP_CAN)
+    // MCP2515 setup
+    #include <SPI.h>
+    // Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+    #include <mcp_can.h>
+    MCP_CAN CAN(10);  // MCP2515 CS pin
+#else
+    // Serial CAN BUS
+    // https://docs.longan-labs.cc/1030001/
+    #define canSerial Serial1
+#endif
 
 // Timers
 uint32_t lastTime = 0;
@@ -41,6 +54,9 @@ unsigned int refuelingCounter = 0;
 SInput s_input;
 
 void sendCAN(uint32_t id, const uint8_t* data) {
+#if defined(USE_MCP_CAN)
+    CAN.sendMsgBuf(id, 0, 8, data);
+#else
     uint8_t buf[14] = {
         (uint8_t)((id >> 24) & 0xFF), (uint8_t)((id >> 16) & 0xFF),
         (uint8_t)((id >> 8) & 0xFF), (uint8_t)(id & 0xFF),
@@ -48,6 +64,7 @@ void sendCAN(uint32_t id, const uint8_t* data) {
     };
     memcpy(&buf[6], data, 8);
     canSerial.write(buf, 14);
+#endif
 }
 
 void canSendIgnitionFrame() {
@@ -604,7 +621,7 @@ void handle1B4(const uint8_t* data) {
 
     const char* handbrake = (data[5] & 0x02) ? "ON" : "OFF";
 
-    pc.printf("[CAN1B4] Speed: %u km/h, Handbrake: %s\n", kmh, handbrake);
+    serial_printf(pc, "[CAN1B4] Speed: %u km/h, Handbrake: %s\n", kmh, handbrake);
 }
 
 void handle330(const uint8_t* data) {
@@ -614,12 +631,12 @@ void handle330(const uint8_t* data) {
     uint16_t rawRange = (data[7] << 8) | data[6];
     uint16_t range = rawRange / 16;
 
-    pc.printf("[CAN330] AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
+    serial_printf(pc, "[CAN330] AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
         avgFuelFromCluster, left, right, range);
 }
 
 void handle2C0(const uint8_t* data) {
-    pc.printf("[CAN2C0] Brightness %X %X %X %X\n",
+    serial_printf(pc, "[CAN2C0] Brightness %X %X %X %X\n",
         data[0], data[1], data[2], data[3]);
 }
 
@@ -644,6 +661,20 @@ static bool match_id(const uint8_t* buf, uint32_t id) {
 }
 
 void readCANSerial(void) {
+#if defined(USE_MCP_CAN)
+    unsigned long id;
+    uint8_t len;
+    uint8_t buf[8];
+    while (CAN_MSGAVAIL == CAN.checkReceive()) {
+        CAN.readMsgBuf(&id, &len, buf);
+        for (size_t i = 0; i < handler_count; ++i) {
+            if (id == handler_table[i].id) {
+                handler_table[i].handler(buf);
+                break;
+            }
+        }
+    }
+#else
     while (canSerial.available()) {
         for (int i = 0; i < FRAME_SIZE - 1; ++i) {
             buffer[i] = buffer[i + 1];
@@ -658,6 +689,7 @@ void readCANSerial(void) {
             }
         }
     }
+#endif
 }
 
 // CAN write queue
@@ -681,7 +713,16 @@ void setup() {
     pc.begin(921600);
 #endif
 
+#if defined(USE_MCP_CAN)
+    randomSeed(analogRead(A0));
+    while (CAN_OK != CAN.begin(MCP_STDEXT, CAN_100KBPS, MCP_8MHZ)) {
+        pc.println("CAN BUS init fail, retrying...");
+        delay(100);
+    }
+    CAN.setMode(MCP_NORMAL);
+#else
     canSerial.begin(115200);
+#endif
 
 #if defined(__AVR_AT90USB1286__)
     // Pick the slightly slower baudrate as the higher more accurate one does not work
@@ -799,12 +840,12 @@ void loop() {
         }
     }
 
-    #if defined(USE_SIMHUB_ASCII)
-        simHubSerialRead();
-    #else
-        serialRead();
-        serialParse();
-    #endif
+#if defined(USE_SIMHUB_ASCII)
+    simHubSerialRead();
+#else
+    serialRead();
+    serialParse();
+#endif
 
     readCANSerial();
 }
