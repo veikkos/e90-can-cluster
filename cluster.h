@@ -4,3 +4,9 @@
 #define MAX_SPEED_KMH_X10 2800u // e.g. 2600u for 260 km/h
 #define SPEED_CALIBRATION 30 // This value is empirically set so the speed matches on this particular cluster
 #define MAX_RPM 8000
+
+// Enable if you get a steering wheel warning
+//#define CAN_STEERING_WHEEL_ALT
+
+// Enable if you get a cruise control warning
+//#define CAN_CRUISE_ALT

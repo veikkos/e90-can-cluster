@@ -153,12 +153,20 @@ void canSendIndicator() {
     sendCAN(ID, frame);
 }
 
+#if !defined(CAN_STEERING_WHEEL_ALT)
 void canSendSteeringWheel() {
     const uint32_t ID = 0x0C4;
     static uint8_t frame[8] = {0x83, 0xFD, 0xFC, 0x00, 0x00, 0xFF, 0xF1, 0x00};
     frame[1] = 0; frame[2] = 0;
     sendCAN(ID, frame);
 }
+#else
+void canSendSteeringWheel() {
+    const uint32_t ID = 0x592;
+    uint8_t frame[8] = {0x40, 0x49, 0x00, 0x30, 0, 0, 0, 0};
+    sendCAN(ID, frame);
+}
+#endif
 
 void canSendAbs() {
     const uint32_t ID = 0x19E;
@@ -553,6 +561,7 @@ inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
     return timer;
 }
 
+#if !defined(CAN_CRUISE_ALT)
 void canSendCruiseControl() {
     const uint32_t ID = 0x193;
 
@@ -598,6 +607,13 @@ void canSendCruiseControl() {
 
     sendCAN(ID, frame);
 }
+#else
+void canSendCruiseControl() {
+    const uint32_t ID = 0x200;
+    uint8_t frame[8] = {0};
+    sendCAN(ID, frame);
+}
+#endif
 
 // CAN read
 #define FRAME_SIZE 14
