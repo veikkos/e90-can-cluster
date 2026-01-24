@@ -243,3 +243,6 @@ Bit  4 : DL_EXT_ADBLUE_LOW       (AdBlue level low)
     - [HeinrichG-V12](https://github.com/HeinrichG-V12/E65_ReverseEngineering)
     - [Trevor Cook](https://www.loopybunny.co.uk/CarPC/k_can.html)
     - [Marcin648](https://github.com/Marcin648/e90-dashboard-ets2)
+    - [SimHub](https://www.simhubdash.com/)
+        - Code borrowed from SimHub `DisplayClientV2` have their respective licensing
+    - telefon01

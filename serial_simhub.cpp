@@ -37,7 +37,6 @@
 #include "SHCustomProtocol.h"
 SHCustomProtocol shCustomProtocol;
 #include "SHCommands.h"
-#include "SHCommandsGlcd.h"
 
 char loop_opt;
 unsigned long lastSerialActivity = 0;
