@@ -1,5 +1,7 @@
 # BMW e90 cluster Arduino project
 
+![Arduino Build](https://github.com/veikkos/e90-can-cluster/actions/workflows/build.yml/badge.svg)
+
 This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games. It is demonstrably easy to port the code to other similar platforms (see notes about [`mbed`](#notes-and-findings)). [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
 
 __Projects like these are floating all around the internet. This project focuses on documenting things [mostly in code] that were hard to come by. It also goes a bit further than many similar projects. Please feel free to contribute!__

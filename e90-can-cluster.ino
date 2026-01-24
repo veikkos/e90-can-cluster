@@ -5,7 +5,7 @@
 #include "cluster.h"
 #include "pc_printf.h"
 
-// Use SimHub format by enabling below define
+// Use SimHub format by enabling below define or via build flags: -DUSE_SIMHUB_ASCII
 //#define USE_SIMHUB_ASCII
 
 #if defined(USE_SIMHUB_ASCII)
@@ -19,6 +19,7 @@
 //#define READ_FRAMES_FROM_CLUSTER_2C0
 
 // CAN interface
+// Define USE_MCP_CAN either here or via build flags: -DUSE_MCP_CAN
 //#define USE_MCP_CAN
 
 #if defined(USE_MCP_CAN)

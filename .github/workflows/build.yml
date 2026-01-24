@@ -1,0 +1,58 @@
+name: Arduino Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-teensy:
+    runs-on: ubuntu-latest
+    name: Build for Teensy 4.1
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v1
+
+    - name: Install Teensy platform
+      run: |
+        arduino-cli config init
+        arduino-cli config add board_manager.additional_urls https://www.pjrc.com/teensy/package_teensy_index.json
+        arduino-cli core update-index
+        arduino-cli core install teensy:avr
+
+    - name: Build for Teensy 4.1
+      run: |
+        arduino-cli compile --fqbn teensy:avr:teensy41 .
+
+  build-nano:
+    runs-on: ubuntu-latest
+    name: Build for Arduino Nano with MCP_CAN and SimHub
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v1
+
+    - name: Install Arduino AVR platform
+      run: |
+        arduino-cli config init
+        arduino-cli core update-index
+        arduino-cli core install arduino:avr
+
+    - name: Install required libraries
+      run: |
+        arduino-cli lib install "mcp_can"
+
+    - name: Build for Arduino Nano
+      run: |
+        arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
+          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN -DUSE_SIMHUB_ASCII" \
+          .
