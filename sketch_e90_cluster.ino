@@ -738,13 +738,14 @@ void setup() {
     CAN.setMode(MCP_NORMAL);
 #else
     canSerial.begin(115200);
-#endif
 
-#if defined(__AVR_AT90USB1286__)
-    // Pick the slightly slower baudrate as the higher more accurate one does not work
-    // with the CAN bus adapter
-    UCSR1A &= ~(1 << U2X1);
-    UBRR1 = 8;
+    #if defined(__AVR_AT90USB1286__)
+        // Pick the slightly slower baudrate as the higher more accurate one does not work
+        // with the CAN bus adapter
+        UCSR1A &= ~(1 << U2X1);
+        UBRR1 = 8;
+    #endif
+
 #endif
 }
 
