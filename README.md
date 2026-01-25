@@ -2,16 +2,16 @@
 
 ![Arduino Build](https://github.com/veikkos/e90-can-cluster/actions/workflows/build.yml/badge.svg)
 
-This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games. It is demonstrably easy to port the code to other similar platforms (see notes about [`mbed`](#notes-and-findings)). [Serial CAN bus adapter](https://docs.longan-labs.cc/1030001/) is used between the microcontroller's UART port and the cluster's CAN port.
+This is a BMW e90 CAN bus project to connect a real car instrument cluster to a personal computer using an Arduino microcontroller. The cluster can then be used in driving games.
 
-__Projects like these are floating all around the internet. This project focuses on documenting things [mostly in code] that were hard to come by. It also goes a bit further than many similar projects. Please feel free to contribute!__
+__This project focuses on documenting things [mostly in code] that were hard to come by. It also goes further than many similar projects. Please feel free to contribute!__
 
 __NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
 
 [![Video demo](./media/highlight.jpg)](https://www.youtube.com/watch?v=nLnR1HzLEew)
 _Click the image to see a video demo_
 
-The clusters I have are a km/h model from cars __with an automatic gearbox__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
+The clusters I have are a km/h models from cars __with automatic gearboxes__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
 
 Below is a cluster variant with working oil temperature gauge.
 
@@ -19,7 +19,7 @@ Below is a cluster variant with working oil temperature gauge.
 
 ## Hardware support
 
-Teensy++ 2.0 and 4.1 have been tested. Arduino Nano should also work but the support is experimental.
+Teensy++ 2.0 and 4.1 and Arduino Nano have been tested. Many other models should work as well with no or little adaptation.
 
 ### CAN adapter
 
