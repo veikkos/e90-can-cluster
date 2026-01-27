@@ -44,7 +44,8 @@ public:
 		s_input.indicator_state = (INDICATOR)indicators;
 		
 		s_input.handbrake = FlowSerialReadStringUntil(';').toInt() != 0;
-		s_input.abs_warn = FlowSerialReadStringUntil('\n').toInt() != 0;
+		s_input.abs_warn = FlowSerialReadStringUntil(';').toInt() != 0;
+		s_input.light_tc_active = FlowSerialReadStringUntil('\n').toInt() != 0;
 	}
 
 	void loop() {

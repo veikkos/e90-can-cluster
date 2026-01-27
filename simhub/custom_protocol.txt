@@ -8,4 +8,5 @@ if([DataCorePlugin.GameData.NewData.EngineIgnitionOn], 2, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.Rpms] > 100, 1, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.TurnIndicatorLeft] && [DataCorePlugin.GameData.NewData.TurnIndicatorRight], 3, if([DataCorePlugin.GameData.NewData.TurnIndicatorLeft], 1, if([DataCorePlugin.GameData.NewData.TurnIndicatorRight], 2, 0))) + ';' +
 if([DataCorePlugin.GameData.NewData.Handbrake], 1, 0) + ';' +
-if([DataCorePlugin.GameData.NewData.ABSActive], 1, 0)
+if([DataCorePlugin.GameData.NewData.ABSActive], 1, 0) + ';' +
+if([DataCorePlugin.GameData.NewData.TCActive], 1, 0)
