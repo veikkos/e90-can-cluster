@@ -45,7 +45,14 @@ public:
 		
 		s_input.handbrake = FlowSerialReadStringUntil(';').toInt() != 0;
 		s_input.abs_warn = FlowSerialReadStringUntil(';').toInt() != 0;
-		s_input.light_tc_active = FlowSerialReadStringUntil('\n').toInt() != 0;
+		s_input.light_tc_active = FlowSerialReadStringUntil(';').toInt() != 0;
+
+		s_input.time_year   = FlowSerialReadStringUntil(';').toInt();
+		s_input.time_month  = FlowSerialReadStringUntil(';').toInt();
+		s_input.time_day    = FlowSerialReadStringUntil(';').toInt();
+		s_input.time_hour   = FlowSerialReadStringUntil(';').toInt();
+		s_input.time_minute = FlowSerialReadStringUntil(';').toInt();
+		s_input.time_second = FlowSerialReadStringUntil('\n').toInt();
 	}
 
 	void loop() {
