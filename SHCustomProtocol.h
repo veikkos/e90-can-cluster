@@ -36,6 +36,7 @@ public:
 
 		s_input.water_temp = FlowSerialReadStringUntil(';').toInt();
 		s_input.ignition = (IGNITION_STATE)FlowSerialReadStringUntil(';').toInt();
+		s_input.light_lowbeam = s_input.ignition != IG_OFF;
 		s_input.engine_running = FlowSerialReadStringUntil(';').toInt() != 0;
 		
 		// Indicators: 0=off, 1=left, 2=right, 3=hazard

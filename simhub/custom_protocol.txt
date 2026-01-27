@@ -1,10 +1,10 @@
 format([DataCorePlugin.GameData.NewData.SpeedKmh],'0') + ';' +
 format([DataCorePlugin.GameData.NewData.Rpms],'0') + ';' +
 format([DataCorePlugin.GameData.NewData.OilTemperature],'0') + ';' +
-format([DataCorePlugin.GameData.NewData.FuelPercent],'0') + ';' +
+round([DataCorePlugin.GameData.NewData.FuelPercent] * 10, 0) + ';' +
 isnull([DataCorePlugin.GameData.NewData.Gear],'N') + ';' +
 format([DataCorePlugin.GameData.NewData.WaterTemperature],'0') + ';' +
-if([DataCorePlugin.GameData.NewData.EngineIgnitionOn],if([DataCorePlugin.GameData.NewData.EngineStarted],2,1),0) + ';' +
+if([DataCorePlugin.GameData.NewData.EngineIgnitionOn], 2, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.Rpms] > 100, 1, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.TurnIndicatorLeft] && [DataCorePlugin.GameData.NewData.TurnIndicatorRight], 3, if([DataCorePlugin.GameData.NewData.TurnIndicatorLeft], 1, if([DataCorePlugin.GameData.NewData.TurnIndicatorRight], 2, 0))) + ';' +
 if([DataCorePlugin.GameData.NewData.Handbrake], 1, 0) + ';' +
