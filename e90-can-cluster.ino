@@ -154,20 +154,12 @@ void canSendIndicator() {
     sendCAN(ID, frame);
 }
 
-#if !defined(CAN_STEERING_WHEEL_ALT)
 void canSendSteeringWheel() {
     const uint32_t ID = 0x0C4;
     static uint8_t frame[8] = {0x83, 0xFD, 0xFC, 0x00, 0x00, 0xFF, 0xF1, 0x00};
     frame[1] = 0; frame[2] = 0;
     sendCAN(ID, frame);
 }
-#else
-void canSendSteeringWheel() {
-    const uint32_t ID = 0x592;
-    uint8_t frame[8] = {0x40, 0x49, 0x00, 0x30, 0, 0, 0, 0};
-    sendCAN(ID, frame);
-}
-#endif
 
 void canSendAbs() {
     const uint32_t ID = 0x19E;
