@@ -46,6 +46,7 @@ public:
 		s_input.handbrake = FlowSerialReadStringUntil(';').toInt() != 0;
 		s_input.abs_warn = FlowSerialReadStringUntil(';').toInt() != 0;
 		s_input.light_tc_active = FlowSerialReadStringUntil(';').toInt() != 0;
+		s_input.fuel_injection = FlowSerialReadStringUntil(';').toInt();
 
 		s_input.time_year   = FlowSerialReadStringUntil(';').toInt();
 		s_input.time_month  = FlowSerialReadStringUntil(';').toInt();

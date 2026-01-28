@@ -10,6 +10,7 @@ if([DataCorePlugin.GameData.NewData.TurnIndicatorLeft] && [DataCorePlugin.GameDa
 if([DataCorePlugin.GameData.NewData.Handbrake], 1, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.ABSActive], 1, 0) + ';' +
 if([DataCorePlugin.GameData.NewData.TCActive], 1, 0) + ';' +
+round([DataCorePlugin.GameData.InstantConsumption_L100KM] * [DataCorePlugin.GameData.NewData.SpeedKmh] * 5 / 18, 0) + ';' +
 format([DataCorePlugin.CurrentDateTime], 'yyyy') + ';' +
 format([DataCorePlugin.CurrentDateTime], 'MM')   + ';' +
 format([DataCorePlugin.CurrentDateTime], 'dd')   + ';' +
