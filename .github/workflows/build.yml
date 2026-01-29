@@ -30,7 +30,7 @@ jobs:
       run: |
         arduino-cli compile --fqbn teensy:avr:teensy41 .
 
-  build-nano:
+  build-nano-simhub:
     runs-on: ubuntu-latest
     name: Build for Arduino Nano with MCP_CAN and SimHub
 
@@ -56,3 +56,28 @@ jobs:
         arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
           --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN -DUSE_SIMHUB_ASCII" \
           .
+  build-nano-ambient:
+    runs-on: ubuntu-latest
+    name: Build for Arduino Nano with MCP_CAN and AD5272_AMBIENT
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v1
+
+    - name: Install Arduino AVR platform
+      run: |
+        arduino-cli config init
+        arduino-cli core update-index
+        arduino-cli core install arduino:avr
+
+    - name: Install required libraries
+      run: |
+        arduino-cli lib install "mcp_can"
+
+    - name: Build for Arduino Nano
+      run: |
+        arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
+          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN -DUSE_AD5272_AMBIENT" \

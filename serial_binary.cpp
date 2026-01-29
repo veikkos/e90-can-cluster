@@ -6,7 +6,7 @@
 
 extern SInput s_input;
 
-#define FRAME_LENGTH 33
+#define FRAME_LENGTH 35
 char rx_buf[FRAME_LENGTH];
 size_t rx_pos = 0;
 bool line_ready = false;
@@ -165,6 +165,8 @@ void serialParse() {
 
     s_input.ignition         = (IGNITION_STATE)p[idx++];
     s_input.engine_running   = p[idx++] != 0;
+
+    s_input.ambient_temp = parse_u16(&p[idx]); idx += 2;
 
     // Gear logic
     if (gearMode == 'P') {

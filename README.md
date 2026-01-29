@@ -123,6 +123,12 @@ The code is able to control following things on the cluster
     - SOS call system
     - Steering wheel
     - Airbags
+- Ambient temperature
+    - This requires optional digital potentiometer, AD5272 is supported
+      - You might want to set reasonable default resistance value (outside of this repo's scope)
+      - Ambient temperature is __really__ slow to update due to heavy filtering in the cluster
+      - Enable with `USE_AD5272_AMBIENT` in code
+          - See the pin setup in [ad5272_ambient](ad5272_ambient.h)
 
 ## Pinout
 
@@ -142,7 +148,7 @@ The code is able to control following things on the cluster
 
 __Tip:__ There are faint numbers on the cluster port marking the pin numbers. Look closely!
 
-- __Temperature__: Outside temperature is measured with an external sensor of resistive type between pins 4 and 5. A resistor of 10k Ohm can be used to show approximately 10'C which removes the cold weather warning
+- __Temperature__: Outside temperature is measured with an external sensor of resistive type between pins 4 and 5. A resistor of 10k Ohm can be used to show approximately 10'C which removes the cold weather warning. Alternatively see `USE_AD5272_AMBIENT` for digital potentiometer solution.
 - __BC buttons__: Cluster menus can be navigated by connecting pin 16 to ground with 3 buttons via resistors. The values should be 1k (Enter), 2k (Up), 3k (Down) Ohm
 
 Remember to connect the cluster GND, microcontroller GND and Serial CAN bus adapter GND together.
@@ -182,7 +188,8 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Vehicle ahead, Bit 2: Collision warning, Bits 3-5: Adaptive cruise following distance (1-4) |
 | 20     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 31     | 1    | `engine running`    | 1 = on, 0 = off                      |
-| 32     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
+| 32     | 2    | `ambient temp`      | °C × 10 (e.g. 215 = 21.5°C)          |
+| 34     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
 
 ### `showlights` Breakdown
 

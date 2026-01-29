@@ -4,6 +4,7 @@
 #include "serial.h"
 #include "cluster.h"
 #include "pc_printf.h"
+#include "ad5272_ambient.h"
 
 // Use SimHub format by enabling below define or via build flags: -DUSE_SIMHUB_ASCII
 //#define USE_SIMHUB_ASCII
@@ -32,6 +33,12 @@
     // Serial CAN BUS
     // https://docs.longan-labs.cc/1030001/
     #define canSerial Serial1
+#endif
+
+// Ambient temperature emulation with AD5272 digital potentiometer (enable in ad5272_ambient.h)
+#if defined(USE_AD5272_AMBIENT)
+    #include "ad5272_ambient.h"
+    AD5272Ambient ambientTemp;
 #endif
 
 // Timers
@@ -740,6 +747,15 @@ void setup() {
     #endif
 
 #endif
+
+#if defined(USE_AD5272_AMBIENT)
+    if (!ambientTemp.begin()) {
+        pc.println("AD5272 ambient temp sensor init failed");
+    } else {
+        pc.println("AD5272 initialized successfully");
+        ambientTemp.setTemperature((float)s_input.ambient_temp / 10.f);
+    }
+#endif
 }
 
 void checkRefuelingStatus() {
@@ -831,6 +847,9 @@ void loop() {
         if (canCounter % 100 == 35) {
             queuePush(canSendTime);
             checkRefuelingStatus();
+#if defined(USE_AD5272_AMBIENT)
+            ambientTemp.setTemperature((float)s_input.ambient_temp / 10.f);
+#endif
         }
         // Send every 10 s
         if (canCounter % 1000 == 47) {

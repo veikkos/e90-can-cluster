@@ -139,6 +139,7 @@ struct SInput {
     bool brake_temp = false;
     bool radiator_warn = false;
     bool engine_running = true;
+    int16_t ambient_temp = 200;
     bool yellow_triangle = false;
     bool red_triangle = false;
     bool gear_issue = false;
