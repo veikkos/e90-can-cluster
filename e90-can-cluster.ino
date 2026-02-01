@@ -776,6 +776,27 @@ void checkRefuelingStatus() {
     avgFuelLast = avgFuelFromCluster;
 }
 
+#if defined(USE_AD5272_AMBIENT)
+void updateAmbientTemperature() {
+    static float current_temp = (float)s_input.ambient_temp / 10.f;
+    float target_temp = (float)s_input.ambient_temp / 10.f;
+
+    // Move towards target at max 0.1°C per second
+    const float max_change = 0.1f;
+    float delta = target_temp - current_temp;
+
+    if (delta > max_change) {
+        current_temp += max_change;
+    } else if (delta < -max_change) {
+        current_temp -= max_change;
+    } else {
+        current_temp = target_temp;
+    }
+
+    ambientTemp.setTemperature(current_temp);
+}
+#endif
+
 void loop() {
     uint32_t now_us = micros();
     uint32_t now_ms = now_us / 1000;
@@ -848,7 +869,7 @@ void loop() {
             queuePush(canSendTime);
             checkRefuelingStatus();
 #if defined(USE_AD5272_AMBIENT)
-            ambientTemp.setTemperature((float)s_input.ambient_temp / 10.f);
+            updateAmbientTemperature();
 #endif
         }
         // Send every 10 s

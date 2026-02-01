@@ -9,9 +9,6 @@
 #define NTC_T0        298.15f      // 25°C in Kelvin
 #define NTC_BETA      3950.0f      // Beta constant (typical BMW/VDO/HELLA NTC)
 
-#define DIGIPOT_OHMS  100000.0f    // 100kΩ digital potentiometer
-#define DIGIPOT_STEPS 1023.0f      // 10-bit resolution (0-1023)
-
 AD5272Ambient::AD5272Ambient() : _address(AD5272_I2C_ADDRESS), _initialized(false) {
 }
 
@@ -124,7 +121,7 @@ uint16_t AD5272Ambient::getWiperPosition() {
         return 0;
     }
 
-    uint16_t raw = readRegister(AD5272_CMD_READ_50TP_LAST);
+    uint16_t raw = readRegister(AD5272_CMD_READ_RDAC);
     return raw & 0x03FF;
 }
 
