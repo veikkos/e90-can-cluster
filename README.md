@@ -6,63 +6,11 @@ This is a BMW e90 CAN bus project to connect a real car instrument cluster to a 
 
 __This project focuses on documenting things [mostly in code] that were hard to come by. It also goes further than many similar projects. Please feel free to contribute!__
 
-__NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not adviceable to do this project on a cluster which you still plan to use in a car!_
-
 [![Video demo](./media/highlight.jpg)](https://www.youtube.com/watch?v=nLnR1HzLEew)
 _Click the image to see a video demo_
 
-The clusters I have are a km/h models from cars __with automatic gearboxes__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode.
-
-Below is a cluster variant with working oil temperature gauge.
-
 ![Cluster with oil temperature gauge](./media/highlight-oil-temp.jpg)
-
-## Hardware support
-
-Teensy++ 2.0 and 4.1 and Arduino Nano have been tested. Many other models should work as well with no or little adaptation.
-
-### CAN adapter
-
-Two adapter types are supported.
-
-#### Serial CAN bus adapter
-
-https://docs.longan-labs.cc/1030001/
-
-- Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
-- Connection should be made RX to TX and TX to RX between the cluster and the Serial CAN bus adapter
-- It's best to set the parameters with one-time-use-only code one at the time and have `while(1);` after the set
-    - Hook up the UART code so that you can see what the adapter responds. It should say `OK` after you set a value
-    - Send `+++` to go to configuration mode
-    - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
-    - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
-- There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
-- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
-- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
-
-#### MCP2515 SPI adapter
-
-Support is experimental. Enable `USE_MCP_CAN` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
-
-## The software setup
-
-### SimHub
-
-SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
-
-### Custom solution
-
-The custom solution supports _advanced_ features.
-
-The setup is a bit convoluted but currently it consists of the following parts:
-- [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
-    - This BeamNG plugin provides the game telemetry via an UDP socket
-- [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/e90-can-cluster-proxy)
-    - This is the "SimHub" equivalent of this setup
-    - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
-    - The proxy supports **BeamNG**, **Euro Truck Simulator 2** and **American Truck Simulator**
-    - It could be possible to get rid of this proxy and send e.g. BeamNG telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
-- This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
+_Cluster variant with oil temperature gauge_
 
 ## Current capabilities
 
@@ -130,7 +78,28 @@ The code is able to control following things on the cluster
       - Enable with `USE_AD5272_AMBIENT` in code
           - See the pin setup in [ad5272_ambient](ad5272_ambient.h)
 
-## Pinout
+## Hardware
+
+### Microcontroller
+
+Teensy++ 2.0 and 4.1 and Arduino Nano have been tested. Many other models should work as well with no or little adaptation.
+
+### Cluster
+
+The following Siemens VDO clusters have been tested to be fully working:
+
+| ZB NR | SW | HW |
+|-------|----|----|
+| 9166852-02 | 79.50.C1 | 0E |
+| 9130227-01 | 66.52.C0 | 0E |
+
+These are km/h models from cars __with automatic gearboxes__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently supported.
+
+Other clusters might not work completely but could need some adaptation.
+
+__NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not advisable to do this project on a cluster which you still plan to use in a car!_
+
+### Cluster pinout
 
 ```
                +----------+
@@ -156,6 +125,49 @@ Remember to connect the cluster GND, microcontroller GND and Serial CAN bus adap
 ### Power
 
 The cluster needs 12V power supply. 12V wall adapter can be used, but you need to make sure it's regulated. If you are unsure you should check that the voltage is roughly 12V with a multimeter when there is no load to avoid overvoltage.
+
+### CAN adapter
+
+Two adapter types are supported.
+
+#### Serial CAN bus adapter
+
+https://docs.longan-labs.cc/1030001/
+
+- Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
+- Connection should be made RX to TX and TX to RX between the cluster and the Serial CAN bus adapter
+- It's best to set the parameters with one-time-use-only code one at the time and have `while(1);` after the set
+    - Hook up the UART code so that you can see what the adapter responds. It should say `OK` after you set a value
+    - Send `+++` to go to configuration mode
+    - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
+    - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
+- There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
+- __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
+- The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
+
+#### MCP2515 SPI adapter
+
+Support is experimental. Enable `USE_MCP_CAN` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+
+## Software setup
+
+### SimHub
+
+SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
+
+### Custom solution
+
+The custom solution supports _advanced_ features.
+
+The setup is a bit convoluted but currently it consists of the following parts:
+- [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
+    - This BeamNG plugin provides the game telemetry via a UDP socket
+- [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/e90-can-cluster-proxy)
+    - This is the "SimHub" equivalent of this setup
+    - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
+    - The proxy supports **BeamNG**, **Euro Truck Simulator 2** and **American Truck Simulator**
+    - It could be possible to get rid of this proxy and send e.g. BeamNG telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
+- This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
 
 ## The API
 
