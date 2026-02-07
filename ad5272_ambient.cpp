@@ -2,12 +2,10 @@
 
 #if defined(USE_AD5272_AMBIENT)
 
-// BMW E90 NTC thermistor Beta equation model
-// More accurate than linear interpolation, matches real automotive NTC behavior
-// Beta equation: R(T) = R₀ * exp(B * (1/T - 1/T₀))
-#define NTC_R0        5000.0f      // Ohms at 25°C (5kΩ reference)
-#define NTC_T0        298.15f      // 25°C in Kelvin
-#define NTC_BETA      3950.0f      // Beta constant (typical BMW/VDO/HELLA NTC)
+// NTC thermistor constants (BMW E90)
+#define NTC_R0    5000.0f   // Ohms at 25C
+#define NTC_T0    298.15f   // 25C in Kelvin
+#define NTC_BETA  3950.0f
 
 AD5272Ambient::AD5272Ambient() : _address(AD5272_I2C_ADDRESS), _initialized(false) {
 }

@@ -1,17 +1,11 @@
 #pragma once
 
+#include "config.h"
 #include <Arduino.h>
-
-// Define USE_AD5272_AMBIENT either here or via build flags: -DUSE_AD5272_AMBIENT
-//#define USE_AD5272_AMBIENT
 
 #if defined(USE_AD5272_AMBIENT)
 
 #include <Wire.h>
-
-#define AD5272_I2C_ADDRESS  0x2E
-#define AD5272_I2C_SDA_PIN  18
-#define AD5272_I2C_SCL_PIN  19
 
 #define AD5272_CMD_WRITE_RDAC       (1 << 2)
 #define AD5272_CMD_READ_RDAC        (2 << 2)

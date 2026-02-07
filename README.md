@@ -75,8 +75,12 @@ The code is able to control following things on the cluster
     - This requires optional digital potentiometer, AD5272 is supported
       - You might want to set reasonable default resistance value (outside of this repo's scope)
       - Ambient temperature is __really__ slow to update due to heavy filtering in the cluster
-      - Enable with `USE_AD5272_AMBIENT` in code
-          - See the pin setup in [ad5272_ambient](ad5272_ambient.h)
+      - Enable with `USE_AD5272_AMBIENT` in [config.h](config.h)
+          - See the pin and NTC settings in [config.h](config.h)
+
+## Configuration
+
+Edit [config.h](config.h) to configure the project for your setup.
 
 ## Hardware
 
@@ -147,13 +151,13 @@ https://docs.longan-labs.cc/1030001/
 
 #### MCP2515 SPI adapter
 
-Support is experimental. Enable `USE_MCP_CAN` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+Support is experimental. Enable `USE_MCP_CAN_SPI` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 
 ## Software setup
 
 ### SimHub
 
-SimHub support is experimental. Enable `USE_SIMHUB_ASCII` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
+SimHub support is experimental. Enable `USE_SIMHUB` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
 
 ### Custom solution
 

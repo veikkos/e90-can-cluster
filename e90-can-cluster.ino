@@ -1,3 +1,4 @@
+#include "config.h"
 #include <Arduino.h>
 #include <math.h>
 #include "types.h"
@@ -6,24 +7,13 @@
 #include "pc_printf.h"
 #include "ad5272_ambient.h"
 
-// Use SimHub format by enabling below define or via build flags: -DUSE_SIMHUB_ASCII
-//#define USE_SIMHUB_ASCII
-
-#if defined(USE_SIMHUB_ASCII)
+#if defined(USE_SIMHUB)
     #include "serial_simhub.h"
 #else
     #include "serial_binary.h"
 #endif
 
-// Config defines
-//#define READ_FRAMES_FROM_CLUSTER_1B4
-//#define READ_FRAMES_FROM_CLUSTER_2C0
-
-// CAN interface
-// Define USE_MCP_CAN either here or via build flags: -DUSE_MCP_CAN
-//#define USE_MCP_CAN
-
-#if defined(USE_MCP_CAN)
+#if defined(USE_MCP_CAN_SPI)
     // MCP2515 setup
     #include <SPI.h>
     // Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
@@ -35,7 +25,7 @@
     #define canSerial Serial1
 #endif
 
-// Ambient temperature emulation with AD5272 digital potentiometer (enable in ad5272_ambient.h)
+// Ambient temperature emulation with AD5272 digital potentiometer (enable in config.h)
 #if defined(USE_AD5272_AMBIENT)
     #include "ad5272_ambient.h"
     AD5272Ambient ambientTemp;
@@ -47,8 +37,6 @@ uint32_t lastTaskTime = 0;
 uint16_t canCounter = 0;
 
 // Refueling
-#define REFUELING_LED_PIN 33
-
 uint8_t avgFuelFromCluster = 0;
 const unsigned int refuelingCounterCycles = 2;
 unsigned int refuelingCounter = 0;
@@ -62,7 +50,7 @@ unsigned int refuelingCounter = 0;
 SInput s_input;
 
 void sendCAN(uint32_t id, const uint8_t* data) {
-#if defined(USE_MCP_CAN)
+#if defined(USE_MCP_CAN_SPI)
     CAN.sendMsgBuf(id, 0, 8, data);
 #else
     uint8_t buf[14] = {
@@ -676,8 +664,8 @@ static bool match_id(const uint8_t* buf, uint32_t id) {
         buf[3] == (id & 0xFF);
 }
 
-void readCANSerial(void) {
-#if defined(USE_MCP_CAN)
+void readCAN(void) {
+#if defined(USE_MCP_CAN_SPI)
     unsigned long id;
     uint8_t len;
     uint8_t buf[8];
@@ -723,13 +711,13 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(REFUELING_LED_PIN, OUTPUT);
 
-#if defined(USE_SIMHUB_ASCII)
+#if defined(USE_SIMHUB)
     simHubSetup();
 #else
     pc.begin(921600);
 #endif
 
-#if defined(USE_MCP_CAN)
+#if defined(USE_MCP_CAN_SPI)
     randomSeed(analogRead(A0));
     while (CAN_OK != CAN.begin(MCP_STDEXT, CAN_100KBPS, MCP_8MHZ)) {
         pc.println("CAN BUS init fail, retrying...");
@@ -890,12 +878,12 @@ void loop() {
         }
     }
 
-#if defined(USE_SIMHUB_ASCII)
+#if defined(USE_SIMHUB)
     simHubSerialRead();
 #else
     serialRead();
     serialParse();
 #endif
 
-    readCANSerial();
+    readCAN();
 }

@@ -32,7 +32,7 @@ jobs:
 
   build-nano-simhub:
     runs-on: ubuntu-latest
-    name: Build for Arduino Nano with MCP_CAN and SimHub
+    name: Build for Arduino Nano with MCP2515 SPI and SimHub
 
     steps:
     - name: Checkout code
@@ -54,11 +54,11 @@ jobs:
     - name: Build for Arduino Nano
       run: |
         arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
-          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN -DUSE_SIMHUB_ASCII" \
+          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN_SPI -DUSE_SIMHUB" \
           .
   build-nano-ambient:
     runs-on: ubuntu-latest
-    name: Build for Arduino Nano with MCP_CAN and AD5272_AMBIENT
+    name: Build for Arduino Nano with MCP2515 SPI and AD5272 ambient
 
     steps:
     - name: Checkout code
@@ -80,4 +80,4 @@ jobs:
     - name: Build for Arduino Nano
       run: |
         arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
-          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN -DUSE_AD5272_AMBIENT" \
+          --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN_SPI -DUSE_AD5272_AMBIENT" \
