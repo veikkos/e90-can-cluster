@@ -644,6 +644,23 @@ void handle2C0(const uint8_t* data) {
         data[0], data[1], data[2], data[3]);
 }
 
+void handle2CA(const uint8_t* data) {
+    float temp_c = (data[0] / 2.0f) - 40.0f;
+    serial_printf(pc, "[CAN2CA] Outside Temp: %.1f°C\n", temp_c);
+}
+
+void handle2F8(const uint8_t* data) {
+    uint8_t hour = data[0];
+    uint8_t minute = data[1];
+    uint8_t second = data[2];
+    uint8_t day = data[3];
+    uint8_t month = data[4] >> 4;
+    uint16_t year = data[5] | (data[6] << 8);
+
+    serial_printf(pc, "[CAN2F8] Time: %02u:%02u:%02u Date: %02u.%02u.%u\n",
+        hour, minute, second, day, month, year);
+}
+
 static const CanHandlerEntry handler_table[] = {
 #ifdef READ_FRAMES_FROM_CLUSTER_1B4
     { 0x000001B4, handle1B4 },
@@ -651,6 +668,12 @@ static const CanHandlerEntry handler_table[] = {
     { 0x00000330, handle330 },
 #ifdef READ_FRAMES_FROM_CLUSTER_2C0
     { 0x000002C0, handle2C0 },
+#endif
+#ifdef READ_FRAMES_FROM_CLUSTER_2CA
+    { 0x000002CA, handle2CA },
+#endif
+#ifdef READ_FRAMES_FROM_CLUSTER_2F8
+    { 0x000002F8, handle2F8 },
 #endif
 };
 

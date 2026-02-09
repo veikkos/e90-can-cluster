@@ -59,5 +59,7 @@
 #endif
 
 // Debug: uncomment to log CAN frames from cluster
-//#define READ_FRAMES_FROM_CLUSTER_1B4
-//#define READ_FRAMES_FROM_CLUSTER_2C0
+//#define READ_FRAMES_FROM_CLUSTER_1B4  // Speed & handbrake
+//#define READ_FRAMES_FROM_CLUSTER_2C0  // Brightness/light sensor
+//#define READ_FRAMES_FROM_CLUSTER_2CA  // Outside temperature
+//#define READ_FRAMES_FROM_CLUSTER_2F8  // Time and date
