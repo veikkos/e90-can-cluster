@@ -52,7 +52,7 @@ SInput s_input;
 
 void sendCAN(uint32_t id, const uint8_t* data) {
 #if defined(USE_MCP_CAN_SPI)
-    CAN.sendMsgBuf(id, 0, 8, data);
+    CAN.sendMsgBuf(id, 0, 8, (byte*)data);
 #else
     uint8_t buf[14] = {
         (uint8_t)((id >> 24) & 0xFF), (uint8_t)((id >> 16) & 0xFF),
@@ -606,7 +606,6 @@ void canSendCruiseControl() {
 
 // CAN read
 #define FRAME_SIZE 14
-static uint8_t buffer[FRAME_SIZE];
 
 typedef void (*FrameHandler)(const uint8_t* frame);
 
@@ -657,6 +656,9 @@ static const CanHandlerEntry handler_table[] = {
 
 static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
 
+#if !defined(USE_MCP_CAN_SPI)
+static uint8_t buffer[FRAME_SIZE];
+
 static bool match_id(const uint8_t* buf, uint32_t id) {
     return
         buf[0] == ((id >> 24) & 0xFF) &&
@@ -664,6 +666,7 @@ static bool match_id(const uint8_t* buf, uint32_t id) {
         buf[2] == ((id >> 8) & 0xFF) &&
         buf[3] == (id & 0xFF);
 }
+#endif
 
 void readCAN(void) {
 #if defined(USE_MCP_CAN_SPI)
