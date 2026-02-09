@@ -1,7 +1,10 @@
 #pragma once
 
 // CAN adapter: uncomment for MCP2515 SPI adapter, otherwise Serial CAN bus
+// Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 //#define USE_MCP_CAN_SPI
+
+#define MCP_CAN_SPI_CS_PIN 10
 
 // Serial protocol: uncomment for SimHub, otherwise custom binary
 //#define USE_SIMHUB

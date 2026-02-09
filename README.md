@@ -76,7 +76,6 @@ The code is able to control following things on the cluster
       - You might want to set reasonable default resistance value (outside of this repo's scope)
       - Ambient temperature is __really__ slow to update due to heavy filtering in the cluster
       - Enable with `USE_AD5272_AMBIENT` in [config.h](config.h)
-          - See the pin and NTC settings in [config.h](config.h)
 
 ## Configuration
 

@@ -3,9 +3,12 @@
 #include <math.h>
 #include "types.h"
 #include "serial.h"
-#include "cluster.h"
 #include "pc_printf.h"
 #include "ad5272_ambient.h"
+
+/*
+    See config.h for options!
+*/
 
 #if defined(USE_SIMHUB)
     #include "serial_simhub.h"
@@ -14,18 +17,16 @@
 #endif
 
 #if defined(USE_MCP_CAN_SPI)
-    // MCP2515 setup
     #include <SPI.h>
-    // Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
     #include <mcp_can.h>
-    MCP_CAN CAN(10);  // MCP2515 CS pin
+    MCP_CAN CAN(MCP_CAN_SPI_CS_PIN);
 #else
     // Serial CAN BUS
     // https://docs.longan-labs.cc/1030001/
     #define canSerial Serial1
 #endif
 
-// Ambient temperature emulation with AD5272 digital potentiometer (enable in config.h)
+// Ambient temperature emulation with AD5272 digital potentiometer
 #if defined(USE_AD5272_AMBIENT)
     #include "ad5272_ambient.h"
     AD5272Ambient ambientTemp;

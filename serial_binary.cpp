@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "types.h"
 #include "serial.h"
-#include "cluster.h"
+#include "config.h"
 #include "pc_printf.h"
 
 extern SInput s_input;

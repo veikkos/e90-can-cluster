@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include "types.h"
-#include "cluster.h"
+#include "config.h"
 
 extern SInput s_input;
 
