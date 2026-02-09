@@ -9,6 +9,15 @@
 // Serial protocol: uncomment for SimHub, otherwise custom binary
 //#define USE_SIMHUB
 
+// Serial baud rates
+#ifndef PC_SERIAL_BAUD
+    #define PC_SERIAL_BAUD 921600
+#endif
+
+#ifndef CAN_SERIAL_BAUD
+    #define CAN_SERIAL_BAUD 115200
+#endif
+
 // Cluster parameters
 #ifndef NUMBER_OF_GEARS
     #define NUMBER_OF_GEARS 7

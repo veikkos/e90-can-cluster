@@ -718,7 +718,7 @@ void setup() {
 #if defined(USE_SIMHUB)
     simHubSetup();
 #else
-    pc.begin(921600);
+    pc.begin(PC_SERIAL_BAUD);
 #endif
 
 #if defined(USE_MCP_CAN_SPI)
@@ -729,7 +729,7 @@ void setup() {
     }
     CAN.setMode(MCP_NORMAL);
 #else
-    canSerial.begin(115200);
+    canSerial.begin(CAN_SERIAL_BAUD);
 
     #if defined(__AVR_AT90USB1286__)
         // Pick the slightly slower baudrate as the higher more accurate one does not work
