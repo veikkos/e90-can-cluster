@@ -150,13 +150,13 @@ https://docs.longan-labs.cc/1030001/
 
 #### MCP2515 SPI adapter
 
-Support is experimental. Enable `USE_MCP_CAN_SPI` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+Enable `USE_MCP_CAN_SPI` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 
 ## Software setup
 
 ### SimHub
 
-SimHub support is experimental. Enable `USE_SIMHUB` in code. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
+SimHub support is experimental and only been briefly tested in BeamNG and in ETS2. Enable `USE_SIMHUB` in config. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
 
 ### Custom solution
 
