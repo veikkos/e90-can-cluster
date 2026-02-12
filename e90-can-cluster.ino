@@ -193,7 +193,7 @@ void canSendEngineTempAndFuelInjection() {
     frame[2] |= (engine_run_state & 0x03) << 4; // bits 4–5
 
     // Value is cumulative fuel injected in 100 ms cycles (account the speed error)
-    fuel_injection_total += (s_input.fuel_injection * (1000 - SPEED_CALIBRATION)) / 1000;
+    fuel_injection_total += ((uint32_t)s_input.fuel_injection * (1000 - SPEED_CALIBRATION)) / 1000;
 
     frame[4] = fuel_injection_total & 0xFF;
     frame[5] = (fuel_injection_total >> 8) & 0xFF;
