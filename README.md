@@ -12,12 +12,12 @@ _Click the image to see a video demo_
 ![Cluster with oil temperature gauge](./media/highlight-oil-temp.jpg)
 _Cluster variant with oil temperature gauge_
 
-## Current capabilities
+## Capabilities
 
 The code is able to control following things on the cluster
 
 - Speedometer
-    - This needed to be "calibrated", see the code
+    - This needed to be "calibrated", see the config
     - See `MAX_SPEED_KMH_X10` for setting the max speed range depending on the cluster
 - RPM
 - Indicators
@@ -77,11 +77,11 @@ The code is able to control following things on the cluster
       - Ambient temperature is __really__ slow to update due to heavy filtering in the cluster
       - Enable with `USE_AD5272_AMBIENT` in [config.h](config.h)
 
-## Configuration
+## Hardware
+
+### Configuration
 
 Edit [config.h](config.h) to configure the project for your setup.
-
-## Hardware
 
 ### Microcontroller
 
@@ -102,7 +102,7 @@ Other clusters might not work completely but could need some adaptation.
 
 __NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not advisable to do this project on a cluster which you still plan to use in a car!_
 
-### Cluster pinout
+#### Pinout
 
 ```
                +----------+
@@ -172,11 +172,11 @@ The setup is a bit convoluted but currently it consists of the following parts:
     - It could be possible to get rid of this proxy and send e.g. BeamNG telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
 - This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
 
-## The API
+#### The binary API
 
 The cluster is controlled over a virtual serial port using a compact **binary protocol**. The (virtual) baud rate is set to **921600**.
 
-### Frame Structure (Little Endian)
+##### Frame Structure (Little Endian)
 
 | Offset | Size | Field               | Description                          |
 |--------|------|---------------------|--------------------------------------|
@@ -206,7 +206,7 @@ The cluster is controlled over a virtual serial port using a compact **binary pr
 | 32     | 2    | `ambient temp`      | °C × 10 (e.g. 215 = 21.5°C)          |
 | 34     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
 
-### `showlights` Breakdown
+##### `showlights` Breakdown
 
 ```
 Bit  0 : DL_SHIFT         (Shift light) UNUSED
@@ -241,7 +241,7 @@ Bit 30 : DL_TC_DISABLED   (Traction control disabled)
 Bit 31 : DL_ESC_DISABLED  (ESC disabled)
 ```
 
-### `showlights ext` Breakdown
+##### `showlights ext` Breakdown
 
 ```
 Bit  0 : DL_EXT_YELLOW_TRIANGLE  (Generic warning, yellow)

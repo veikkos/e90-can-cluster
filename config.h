@@ -28,7 +28,7 @@
 #endif
 
 #ifndef SPEED_CALIBRATION
-    #define SPEED_CALIBRATION 30
+    #define SPEED_CALIBRATION 30 // 30 = 3% speed increase to counteract the built-in error
 #endif
 
 #ifndef MAX_RPM
