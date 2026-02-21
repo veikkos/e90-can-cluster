@@ -4,7 +4,9 @@
 // Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 //#define USE_MCP_CAN_SPI
 
-#define MCP_CAN_SPI_CS_PIN 10
+#ifndef MCP_CAN_SPI_CS_PIN
+    #define MCP_CAN_SPI_CS_PIN 10
+#endif
 
 // Serial protocol: uncomment for SimHub, otherwise custom binary
 //#define USE_SIMHUB
