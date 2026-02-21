@@ -64,7 +64,7 @@ void sendCAN(uint32_t id, const uint8_t* data) {
 #endif
 }
 
-void canSendIgnitionFrame() {
+bool canSendIgnitionFrame() {
     const uint32_t ID = 0x130;
     static uint8_t counter_on = 0xE2;
     static uint8_t byte0 = 0x00;
@@ -81,22 +81,24 @@ void canSendIgnitionFrame() {
 
     uint8_t data[8] = {byte0, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
     sendCAN(ID, data);
+    return true;
 }
 
-void canSendRPM() {
+bool canSendRPM() {
     const uint32_t ID = 0x00AA;
     uint16_t rpm_val = min(s_input.rpm, (uint16_t)MAX_RPM) * 4;
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
                        0x80, 0x99};
     sendCAN(ID, data);
+    return true;
 }
 
 inline uint16_t kmhx10ToMph(uint16_t kmh_x10, uint32_t correction) {
     return (min((uint32_t)kmh_x10, MAX_SPEED_KMH_X10) * (620 + correction) + 5000) / 10000;
 }
 
-void canSendSpeed() {
+bool canSendSpeed() {
     const uint32_t ID = 0x1A6;
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
@@ -120,9 +122,10 @@ void canSendSpeed() {
     sendCAN(ID, frame);
     last_speed_counter = current_speed_counter;
     last_tick_counter = tick_counter;
+    return true;
 }
 
-void canSendLights() {
+bool canSendLights() {
     const uint32_t ID = 0x21A;
     static uint8_t frame[8] = {0x00, 0x00, 0xF7, 0, 0, 0, 0, 0};
 
@@ -134,9 +137,10 @@ void canSendLights() {
 
     frame[0] = lights;
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendIndicator() {
+bool canSendIndicator() {
     const uint32_t ID = 0x1F6;
     uint8_t frame[8] = {0x80, 0xF0, 0, 0, 0, 0, 0, 0};
 
@@ -148,16 +152,18 @@ void canSendIndicator() {
         default:        frame[0] = 0x80; break;
     }
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendSteeringWheel() {
+bool canSendSteeringWheel() {
     const uint32_t ID = 0x0C4;
     static uint8_t frame[8] = {0x83, 0xFD, 0xFC, 0x00, 0x00, 0xFF, 0xF1, 0x00};
     frame[1] = 0; frame[2] = 0;
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendAbs() {
+bool canSendAbs() {
     const uint32_t ID = 0x19E;
     static uint8_t counter = 0;
 
@@ -173,9 +179,10 @@ void canSendAbs() {
     frame[7] = counter++;
 
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendEngineTempAndFuelInjection() {
+bool canSendEngineTempAndFuelInjection() {
     const uint32_t ID = 0x1D0;
     static uint8_t frame[8] = {0x8B, 0xFF, 0x00, 0xCD, 0x00, 0x00, 0xCD, 0xA8};
     const uint8_t engine_run_state = s_input.engine_running ? 0x2 : 0x0;  // 0x0 = off, 0x1 = starting, 0x2 = running, 0x3 = invalid
@@ -199,25 +206,28 @@ void canSendEngineTempAndFuelInjection() {
     frame[5] = (fuel_injection_total >> 8) & 0xFF;
 
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendAbsCounter() {
+bool canSendAbsCounter() {
     const uint32_t ID = 0x0C0;
     static uint8_t frame[8] = {0xF0, 0xFF, 0, 0, 0, 0, 0, 0};
     sendCAN(ID, frame);
     frame[0] = ((frame[0] + 1) | 0xF0);
+    return true;
 }
 
-void canSendAirbagCounter() {
+bool canSendAirbagCounter() {
     const uint32_t ID = 0x0D7;
     static uint8_t frame[8] = {0xC3, 0xFF, 0, 0, 0, 0, 0, 0};
     sendCAN(ID, frame);
     frame[0]++;
+    return true;
 }
 
 // This function is not fully verified but the presence of it makes the average speed and average fuel consumption work. See
 // https://github.com/HeinrichG-V12/E65_ReverseEngineering/blob/main/docs/0x1A0.md
-void canSendVehicleDynamics() {
+bool canSendVehicleDynamics() {
     const uint32_t ID = 0x1A0;
     static uint8_t alive_counter = 0;
 
@@ -250,6 +260,7 @@ void canSendVehicleDynamics() {
     frame[7] = checksum;
 
     sendCAN(ID, frame);
+    return true;
 }
 
 struct FuelLevelPoint {
@@ -293,7 +304,7 @@ inline float currentFuelToFloat() {
     return (float)s_input.fuel / 1000.f;
 }
 
-void canSendFuel() {
+bool canSendFuel() {
     const uint32_t ID = 0x349;
     static uint8_t frame[8] = {0};
     static float previousFuel = currentFuelToFloat();
@@ -333,16 +344,18 @@ void canSendFuel() {
     frame[3] = (levelRight >> 8);
 
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendHandbrake() {
+bool canSendHandbrake() {
     const uint32_t ID = 0x34F;
     static uint8_t frame[8] = {0xFE, 0xFF, 0, 0, 0, 0, 0, 0};
     frame[0] = s_input.handbrake ? 0xFE : 0xFD;
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendTime() {
+bool canSendTime() {
     const uint32_t ID = 0x39E;
     uint8_t data[8] = {
         s_input.time_hour,
@@ -355,12 +368,14 @@ void canSendTime() {
         0xF2
     };
     sendCAN(ID, data);
+    return true;
 }
 
-void canSendDmeStatus() {
+bool canSendDmeStatus() {
     const uint32_t ID = 0x12F;
     uint8_t frame[8] = {0x3F, 0x00, 0x00, 0x00, 0x00, 0x40, 0x01, 0x00};
     sendCAN(ID, frame);
+    return true;
 }
 
 void canSendErrorLight(uint16_t light_id, bool enable) {
@@ -378,17 +393,19 @@ void canSendErrorLight(uint16_t light_id, bool enable) {
     sendCAN(ID, frame);
 }
 
-void canSuppressService() {
+bool canSuppressService() {
     canSendErrorLight(SERVICE_LIGHT, false);
+    return true;
 }
 
-void canSuppressSos() {
+bool canSuppressSos() {
     const uint32_t ID = 0x0C1;
     uint8_t frame[8] = { (uint8_t)rand(), 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     sendCAN(ID, frame);
+    return true;
 }
 
-void canSendGearboxData() {
+bool canSendGearboxData() {
     const uint32_t ID = 0x1D2;
 
     // Byte 0 – Automatic gear
@@ -442,10 +459,11 @@ void canSendGearboxData() {
     };
 
     sendCAN(ID, frame);
+    return true;
 }
 
 #define DEFINE_CAN_SEND_SYMBOL(fn_name, signal_expr, symbol_const, interval, offset) \
-    void fn_name() {                                                                 \
+    bool fn_name() {                                                                 \
         static bool last_value = false;                                              \
         static uint8_t counter = offset;                                             \
         bool value = (signal_expr) && (s_input.ignition >= IG_ON);                   \
@@ -454,7 +472,9 @@ void canSendGearboxData() {
             last_value = value;                                                      \
             counter = 0;                                                             \
             canSendErrorLight(symbol_const, value);                                  \
+            return true;                                                             \
         }                                                                            \
+        return false;                                                                \
     }
 
 bool shouldShowDoorOpenLeftWarning() {
@@ -500,7 +520,7 @@ DEFINE_CAN_SEND_SYMBOL(canSendAdblueLow, s_input.adblue_low, ADBLUE_REFILL_YELLO
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
 DEFINE_CAN_SEND_SYMBOL(canSendEscSymbol, s_input.light_esc_active, DSC_TRIANGLE_SYMBOL_ONLY, 100, 2)
 
-void canSendCustomSymbol() {
+bool canSendCustomSymbol() {
     static bool last_state = false;
     static uint16_t last_number = 0;
     static uint8_t counter = 0;
@@ -511,10 +531,12 @@ void canSendCustomSymbol() {
         last_number = s_input.custom_light;
         counter = 0;
         canSendErrorLight(last_number, last_state);
+        return true;
     }
+    return false;
 }
 
-void canSendOilLevel() {
+bool canSendOilLevel() {
     const uint32_t ID = 0x381;
     static uint8_t frame[8] = {0, 0, 0xFF, 0, 0, 0, 0, 0};
 
@@ -532,6 +554,7 @@ void canSendOilLevel() {
     frame[1] = s_input.oil_warn ? 0xF2 : 0xF0;
 
     sendCAN(ID, frame);
+    return true;
 }
 
 inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
@@ -551,7 +574,7 @@ inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
 }
 
 #if !defined(CAN_CRUISE_ALT)
-void canSendCruiseControl() {
+bool canSendCruiseControl() {
     const uint32_t ID = 0x193;
 
     static uint8_t last_kmh = 0xFE;
@@ -595,12 +618,14 @@ void canSendCruiseControl() {
     };
 
     sendCAN(ID, frame);
+    return true;
 }
 #else
-void canSendCruiseControl() {
+bool canSendCruiseControl() {
     const uint32_t ID = 0x200;
     uint8_t frame[8] = {0};
     sendCAN(ID, frame);
+    return true;
 }
 #endif
 
@@ -725,14 +750,14 @@ void readCAN(void) {
 
 // CAN write queue
 const int MaxQueueSize = 64;
-void (*canQueue[MaxQueueSize])();
+bool (*canQueue[MaxQueueSize])();
 int queueHead = 0;
 int queueTail = 0;
 
 bool queueIsEmpty() { return queueHead == queueTail; }
 bool queueIsFull() { return ((queueTail + 1) % MaxQueueSize) == queueHead; }
-void queuePush(void (*f)()) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
-void (*queuePop())() { if (!queueIsEmpty()) { void (*f)() = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
+void queuePush(bool (*f)()) { if (!queueIsFull()) { canQueue[queueTail] = f; queueTail = (queueTail + 1) % MaxQueueSize; } }
+bool (*queuePop())() { if (!queueIsEmpty()) { bool (*f)() = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -898,10 +923,11 @@ void loop() {
     // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
     // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
     if (now_us - lastTaskTime >= 3000) {
-        void (*task)() = queuePop();
-        if (task) {
+        bool (*task)() = queuePop();
+        if (task && task()) {
+            // Many of the functions do not send a CAN frame every time they are called (e.g. the ones that only update when the value changes)
+            // so only update the task time if a frame was actually sent to avoid blocking the sending with NOOP tasks in the queue
             lastTaskTime = now_us;
-            task();
         }
     }
 
