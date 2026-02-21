@@ -22,14 +22,14 @@ public:
 		
 		String gearStr = FlowSerialReadStringUntil(';');
 		if (gearStr == "N") {
-			s_input.manualGear = NONE;
+			s_input.explicitGear = NONE;
 			s_input.currentGear = NEUTRAL;
 		} else if (gearStr == "R") {
-			s_input.manualGear = NONE;
+			s_input.explicitGear = NONE;
 			s_input.currentGear = REVERSE;
 		} else {
 			int gear = gearStr.toInt();
-			s_input.manualGear = (GEAR_MANUAL)(min(gear, NUMBER_OF_GEARS));
+			s_input.explicitGear = (GEAR_MANUAL)(min(gear, NUMBER_OF_GEARS));
 			s_input.currentGear = DRIVE;
 		}
 		s_input.mode = NORMAL;

@@ -111,7 +111,7 @@ struct SInput {
     uint16_t rpm = 0;
     uint16_t speed = 0;
     GEAR currentGear = PARK;
-    GEAR_MANUAL manualGear = NONE;
+    GEAR_MANUAL explicitGear = NONE;
     GEAR_MODE mode = SPORT;
     uint16_t fuel = 1000;
     uint16_t fuel_injection = 0;

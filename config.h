@@ -37,6 +37,12 @@
     #define MAX_RPM 8000
 #endif
 
+// Comment away to hide "SPORT" from the sport gear mode
+#define GEAR_SPORT_TEXT
+
+// Enable to show "S1", "S2" instead of "D1", "D2" in sport gear mode
+//#define GEAR_SPORT_S
+
 // Uncomment if you get cruise control warnings
 //#define CAN_CRUISE_ALT
 

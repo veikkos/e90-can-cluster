@@ -170,23 +170,23 @@ void serialParse() {
 
     // Gear logic
     if (gearMode == 'P') {
-        s_input.manualGear = NONE;
+        s_input.explicitGear = NONE;
         s_input.currentGear = PARK;
         s_input.mode = NORMAL;
     } else if (gear == NEUTRAL) {
-        s_input.manualGear = NONE;
+        s_input.explicitGear = NONE;
         s_input.currentGear = NEUTRAL;
         s_input.mode = NORMAL;
     } else if (gear == REVERSE) {
-        s_input.manualGear = NONE;
+        s_input.explicitGear = NONE;
         s_input.currentGear = REVERSE;
         s_input.mode = NORMAL;
     } else if (gearMode == 'A') {
-        s_input.manualGear = NONE;
+        s_input.explicitGear = NONE;
         s_input.currentGear = DRIVE;
         s_input.mode = NORMAL;
     } else {
-        s_input.manualGear = (GEAR_MANUAL)(min(gear - 1, NUMBER_OF_GEARS));
+        s_input.explicitGear = (GEAR_MANUAL)(min(gear - 1, NUMBER_OF_GEARS));
         s_input.currentGear = DRIVE;
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }

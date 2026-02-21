@@ -417,10 +417,10 @@ bool canSendGearboxData() {
         case DRIVE:   byte0 = 0x78; break;
     }
 
-    // Byte 1 – Manual gear selection or 0x0F if in automatic
+    // Byte 1 – Explicit gear selection like "D1", "S1" or "M1" depending on the mode
     uint8_t byte1 = 0x0F;
-    if (s_input.manualGear != NONE) {
-        switch (s_input.manualGear) {
+    if (s_input.explicitGear != NONE) {
+        switch (s_input.explicitGear) {
             case M1: byte1 = 0x50; break;
             case M2: byte1 = 0x60; break;
             case M3: byte1 = 0x70; break;
@@ -432,9 +432,6 @@ bool canSendGearboxData() {
         }
     }
 
-    // Byte 2 – Always 0xFF
-    uint8_t byte2 = 0xFF;
-
     // Byte 3 – Counter with high nibble cycling, low nibble fixed
     static uint8_t counter_high = 0;
     uint8_t byte3;
@@ -443,19 +440,30 @@ bool canSendGearboxData() {
         byte3 = (counter_high << 4) | 0x0C; // 0x0C to 0xFC
         counter_high = (counter_high + 1) % 16;
     } else {
-        // 0x0F shows "Sport" on the cluster
-        byte3 = (counter_high << 4) | (s_input.mode == NORMAL ? 0x0D : 0x07);
+        uint8_t sport =
+ #if defined(GEAR_SPORT_TEXT)
+            // 0x07 shows text "SPORT" on the cluster in sport mode
+            s_input.mode == NORMAL ? 0x0D : 0x07;
+ #else
+            0x0D;
+ #endif
+
+        byte3 = (counter_high << 4) | sport;
         counter_high = (counter_high + 1) % 15;
     }
 
-    // Byte 4 – Needed like that so that "D", "Sport D1" and "M1" etc. work correctly
-    uint8_t byte4 = s_input.mode != SPORT && s_input.manualGear != NONE ? 0xF2 : 0xF0;
+    uint8_t byte4 = 0xF0; // "D"
 
-    // Byte 5 – Always 0xFF
-    uint8_t byte5 = 0xFF;
+    if (s_input.mode == SPORT) {
+#if defined(GEAR_SPORT_S)
+        byte4 = 0xF1; // "S"
+#endif
+    } else if (s_input.explicitGear != NONE) {
+        byte4 = 0xF2; // "M" in manual mode
+    }
 
     uint8_t frame[8] = {
-        byte0, byte1, byte2, byte3, byte4, byte5, 0xFF, 0xFF
+        byte0, byte1, 0xFF, byte3, byte4, 0xFF, 0xFF, 0xFF
     };
 
     sendCAN(ID, frame);
