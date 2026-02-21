@@ -43,6 +43,9 @@
 // Enable to show "S1", "S2" instead of "D1", "D2" in sport gear mode
 //#define GEAR_SPORT_S
 
+// Comment away to show "DS" in sport mode, use with GEAR_SPORT_S
+#define GEAR_EXPLICIT_NUMBER_IN_SPORT
+
 // Uncomment if you get cruise control warnings
 //#define CAN_CRUISE_ALT
 

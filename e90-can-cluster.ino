@@ -419,7 +419,11 @@ bool canSendGearboxData() {
 
     // Byte 1 – Explicit gear selection like "D1", "S1" or "M1" depending on the mode
     uint8_t byte1 = 0x0F;
-    if (s_input.explicitGear != NONE) {
+    if (s_input.explicitGear != NONE
+#if !defined(GEAR_EXPLICIT_NUMBER_IN_SPORT)
+        && s_input.mode != SPORT
+#endif
+    ) {
         switch (s_input.explicitGear) {
             case M1: byte1 = 0x50; break;
             case M2: byte1 = 0x60; break;
