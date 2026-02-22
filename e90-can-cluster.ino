@@ -1,6 +1,5 @@
 #include "config.h"
 #include <Arduino.h>
-#include <math.h>
 #include "types.h"
 #include "serial.h"
 #include "pc_printf.h"
@@ -32,22 +31,9 @@
     AD5272Ambient ambientTemp;
 #endif
 
-// Timers
-uint32_t lastTime = 0;
-uint32_t lastTaskTime = 0;
-uint16_t canCounter = 0;
-
-// Refueling
-uint8_t avgFuelFromCluster = 0;
-const unsigned int refuelingCounterCycles = 2;
-unsigned int refuelingCounter = 0;
-
-// Define M_PI if not present
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-// Vehicle state structure
+// State
+STimers s_timers;
+SRefueling s_refueling;
 SInput s_input;
 
 void sendCAN(uint32_t id, const uint8_t* data) {
@@ -85,7 +71,7 @@ bool canSendIgnitionFrame() {
 }
 
 bool canSendRPM() {
-    const uint32_t ID = 0x00AA;
+    const uint32_t ID = 0x0AA;
     uint16_t rpm_val = min(s_input.rpm, (uint16_t)MAX_RPM) * 4;
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
@@ -263,11 +249,6 @@ bool canSendVehicleDynamics() {
     return true;
 }
 
-struct FuelLevelPoint {
-    float fuel_percent;  // 1.0 = 100%, 0.75 = 75%, etc.
-    uint16_t meter_level; // Value to send to the cluster
-};
-
 FuelLevelPoint fuelTableLeft[] = {
     {1.00f, 9700},
     {0.875f, 8200},
@@ -321,11 +302,11 @@ bool canSendFuel() {
 
     if (delta > maxDelta) {
         fuel = previousFuel + maxDelta;
-        refuelingCounter = refuelingCounterCycles;
+        s_refueling.counter = s_refueling.counterCycles;
         digitalWrite(REFUELING_LED_PIN, HIGH);
     } else if (delta < -maxDelta) {
         fuel = previousFuel - maxDelta;
-        refuelingCounter = refuelingCounterCycles;
+        s_refueling.counter = s_refueling.counterCycles;
         digitalWrite(REFUELING_LED_PIN, HIGH);
     }
 
@@ -666,14 +647,14 @@ void handle1B4(const uint8_t* data) {
 }
 
 void handle330(const uint8_t* data) {
-    avgFuelFromCluster = data[3];
+    s_refueling.avgFuelFromCluster = data[3];
     uint8_t left = data[4];
     uint8_t right = data[5];
     uint16_t rawRange = (data[7] << 8) | data[6];
     uint16_t range = rawRange / 16;
 
     serial_printf(pc, "[CAN330] AvgFuel: %u L, L: %u, R: %u, Range: %u km\n",
-        avgFuelFromCluster, left, right, range);
+        s_refueling.avgFuelFromCluster, left, right, range);
 }
 
 void handle2C0(const uint8_t* data) {
@@ -700,17 +681,17 @@ void handle2F8(const uint8_t* data) {
 
 static const CanHandlerEntry handler_table[] = {
 #ifdef READ_FRAMES_FROM_CLUSTER_1B4
-    { 0x000001B4, handle1B4 },
+    { 0x1B4, handle1B4 },
 #endif
-    { 0x00000330, handle330 },
+    { 0x330, handle330 },
 #ifdef READ_FRAMES_FROM_CLUSTER_2C0
-    { 0x000002C0, handle2C0 },
+    { 0x2C0, handle2C0 },
 #endif
 #ifdef READ_FRAMES_FROM_CLUSTER_2CA
-    { 0x000002CA, handle2CA },
+    { 0x2CA, handle2CA },
 #endif
 #ifdef READ_FRAMES_FROM_CLUSTER_2F8
-    { 0x000002F8, handle2F8 },
+    { 0x2F8, handle2F8 },
 #endif
 };
 
@@ -811,21 +792,21 @@ void setup() {
 }
 
 void checkRefuelingStatus() {
-    static uint8_t avgFuelLast = avgFuelFromCluster;
+    static uint8_t avgFuelLast = s_refueling.avgFuelFromCluster;
 
-    if (avgFuelLast == avgFuelFromCluster) {
-        if (refuelingCounter) {
-            refuelingCounter--;
+    if (avgFuelLast == s_refueling.avgFuelFromCluster) {
+        if (s_refueling.counter) {
+            s_refueling.counter--;
         }
     } else {
-        refuelingCounter = refuelingCounterCycles;
+        s_refueling.counter = s_refueling.counterCycles;
     }
 
-    if (!refuelingCounter) {
+    if (!s_refueling.counter) {
         digitalWrite(REFUELING_LED_PIN, LOW);
     }
 
-    avgFuelLast = avgFuelFromCluster;
+    avgFuelLast = s_refueling.avgFuelFromCluster;
 }
 
 #if defined(USE_AD5272_AMBIENT)
@@ -854,11 +835,11 @@ void loop() {
     uint32_t now_ms = now_us / 1000;
 
     // Main loop is executed every 10 ms
-    if (now_ms - lastTime >= 10) {
-        lastTime = now_ms;
+    if (now_ms - s_timers.lastTime >= 10) {
+        s_timers.lastTime = now_ms;
 
         // Send every 100 ms
-        if (canCounter % 10 == 0) {
+        if (s_timers.canCounter % 10 == 0) {
             queuePush(canSendIgnitionFrame);
             queuePush(canSendEngineTempAndFuelInjection);
             queuePush(canSendGearboxData);
@@ -868,14 +849,14 @@ void loop() {
             queuePush(canSendVehicleDynamics);
         }
         // Send every 50 ms
-        if (canCounter % 5 == 1) {
+        if (s_timers.canCounter % 5 == 1) {
             queuePush(canSendRPM);
             queuePush(canSendSpeed);
             queuePush(canSendTcSymbol);
             queuePush(canSendEscSymbol);
         }
         // Send every 200 ms (group 1)
-        if (canCounter % 20 == 7) {
+        if (s_timers.canCounter % 20 == 7) {
             queuePush(canSendLights);
             queuePush(canSendIndicator);
             queuePush(canSendAbs);
@@ -885,7 +866,7 @@ void loop() {
             queuePush(canSendHandbrake);
         }
         // Send every 200 ms (symbols)
-        if (canCounter % 20 == 13) {
+        if (s_timers.canCounter % 20 == 13) {
             queuePush(canSendEngineTempYellowSymbol);
             queuePush(canSendEngineTempRedSymbol);
             queuePush(canSendCheckEngineSymbol);
@@ -912,12 +893,12 @@ void loop() {
             queuePush(canSendAdblueLow);
         }
         // Send every 500 ms
-        if (canCounter % 50 == 5) {
+        if (s_timers.canCounter % 50 == 5) {
             queuePush(canSuppressSos);
             queuePush(canSuppressService);
         }
         // Send every 1 s
-        if (canCounter % 100 == 35) {
+        if (s_timers.canCounter % 100 == 35) {
             queuePush(canSendTime);
             checkRefuelingStatus();
 #if defined(USE_AD5272_AMBIENT)
@@ -925,21 +906,21 @@ void loop() {
 #endif
         }
         // Send every 10 s
-        if (canCounter % 1000 == 47) {
+        if (s_timers.canCounter % 1000 == 47) {
             queuePush(canSendOilLevel);
         }
 
-        canCounter++;
+        s_timers.canCounter++;
     }
 
     // Allow 3 ms time for the serial CAN bus to transmit the frame. With 115200 baud
     // rate to Serial CAN bus and 100 kbs CAN bus this should be enough but 1-2 ms isn't
-    if (now_us - lastTaskTime >= 3000) {
+    if (now_us - s_timers.lastTaskTime >= 3000) {
         bool (*task)() = queuePop();
         if (task && task()) {
             // Many of the functions do not send a CAN frame every time they are called (e.g. the ones that only update when the value changes)
             // so only update the task time if a frame was actually sent to avoid blocking the sending with NOOP tasks in the queue
-            lastTaskTime = now_us;
+            s_timers.lastTaskTime = now_us;
         }
     }
 

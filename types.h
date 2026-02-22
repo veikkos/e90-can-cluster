@@ -97,6 +97,23 @@ enum ErrorLightID : uint16_t {
     ADBLUE_REFILL_YELLOW = 643
 };
 
+struct FuelLevelPoint {
+    float fuel_percent;  // 1.0 = 100%, 0.75 = 75%, etc.
+    uint16_t meter_level; // Value to send to the cluster
+};
+
+struct STimers {
+    uint32_t lastTime = 0;
+    uint32_t lastTaskTime = 0;
+    uint16_t canCounter = 0;
+};
+
+struct SRefueling {
+    uint8_t avgFuelFromCluster = 0;
+    const unsigned int counterCycles = 2;
+    unsigned int counter = 0;
+};
+
 struct SInput {
     IGNITION_STATE ignition = IG_ON;
     INDICATOR indicator_state = I_OFF;
