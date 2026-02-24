@@ -80,8 +80,13 @@ bool canSendRPM() {
     return true;
 }
 
-inline uint16_t speedIncrement(uint16_t kmh_x10, uint32_t correction) {
-    return (min((uint32_t)kmh_x10, MAX_SPEED_KMH_X10) * (680 - correction) + 5000) / 10000;
+inline uint16_t speedIncrement(uint16_t speed_kmh_x10, uint32_t calibration) {
+    // Keep the increments in accumulator to avoid losing precision to rounding every cycle
+    static uint32_t accumulator = 0;
+    accumulator += (uint32_t)speed_kmh_x10 * (680 - calibration);
+    uint16_t result = accumulator / 10000;
+    accumulator %= 10000;
+    return result;
 }
 
 bool canSendSpeed() {
