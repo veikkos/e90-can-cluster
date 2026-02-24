@@ -30,7 +30,12 @@
 #endif
 
 #ifndef SPEED_CALIBRATION
-    #define SPEED_CALIBRATION 30 // 30 = 3% speed increase to counteract the built-in error
+    // 30 = reduces indicated speed by ~3% to compensate for the built-in speedometer
+    // padding (law requires speedometers to never read below actual speed).
+    // With 0: odometer is accurate, speedometer reads a bit high (factory behavior).
+    // With 30: speedometer reads closer to true speed, but odometer counts a bit slow.
+    // Error can be fully removed by removing the built-in error by "coding".
+    #define SPEED_CALIBRATION 30
 #endif
 
 #ifndef MAX_RPM

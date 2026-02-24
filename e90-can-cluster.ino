@@ -80,8 +80,8 @@ bool canSendRPM() {
     return true;
 }
 
-inline uint16_t kmhx10ToMph(uint16_t kmh_x10, uint32_t correction) {
-    return (min((uint32_t)kmh_x10, MAX_SPEED_KMH_X10) * (620 + correction) + 5000) / 10000;
+inline uint16_t speedIncrement(uint16_t kmh_x10, uint32_t correction) {
+    return (min((uint32_t)kmh_x10, MAX_SPEED_KMH_X10) * (680 - correction) + 5000) / 10000;
 }
 
 bool canSendSpeed() {
@@ -89,8 +89,8 @@ bool canSendSpeed() {
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
     uint32_t delta_ms = 100;
-    uint16_t speed_mph = kmhx10ToMph(s_input.speed, SPEED_CALIBRATION);
-    uint16_t current_speed_counter = speed_mph + last_speed_counter;
+    uint16_t speed_increment = speedIncrement(s_input.speed, SPEED_CALIBRATION);
+    uint16_t current_speed_counter = speed_increment + last_speed_counter;
     uint16_t delta_tick_counter = delta_ms * 2;
     uint16_t tick_counter = last_tick_counter + delta_tick_counter;
 
