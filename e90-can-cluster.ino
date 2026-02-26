@@ -83,7 +83,7 @@ bool canSendRPM() {
 inline uint16_t speedIncrement(uint16_t speed_kmh_x10, uint32_t calibration) {
     // Keep the increments in accumulator to avoid losing precision to rounding every cycle
     static uint32_t accumulator = 0;
-    accumulator += (uint32_t)speed_kmh_x10 * (680 - calibration);
+    accumulator += (uint32_t)speed_kmh_x10 * (1360 - calibration);
     uint16_t result = accumulator / 10000;
     accumulator %= 10000;
     return result;
@@ -93,14 +93,14 @@ bool canSendSpeed() {
     const uint32_t ID = 0x1A6;
     static uint16_t last_speed_counter = 0;
     static uint16_t last_tick_counter = 0;
-    uint32_t delta_ms = 100;
+
     uint16_t speed_increment = speedIncrement(s_input.speed, SPEED_CALIBRATION);
     uint16_t current_speed_counter = speed_increment + last_speed_counter;
-    uint16_t delta_tick_counter = delta_ms * 2;
-    uint16_t tick_counter = last_tick_counter + delta_tick_counter;
 
     uint8_t low = current_speed_counter & 0xFF;
     uint8_t high = current_speed_counter >> 8;
+
+    uint16_t tick_counter = last_tick_counter + 400;
 
     uint8_t frame[8] = {
         low, high,
@@ -852,11 +852,11 @@ void loop() {
             queuePush(canSendDmeStatus);
             queuePush(canSendCruiseControl);
             queuePush(canSendVehicleDynamics);
+            queuePush(canSendSpeed);
         }
         // Send every 50 ms
         if (s_timers.canCounter % 5 == 1) {
             queuePush(canSendRPM);
-            queuePush(canSendSpeed);
             queuePush(canSendTcSymbol);
             queuePush(canSendEscSymbol);
         }
