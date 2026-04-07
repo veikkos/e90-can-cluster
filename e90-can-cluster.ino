@@ -768,7 +768,7 @@ void setup() {
 
 #if defined(USE_MCP_CAN_SPI)
     randomSeed(analogRead(A0));
-    while (CAN_OK != CAN.begin(MCP_STDEXT, CAN_100KBPS, MCP_8MHZ)) {
+    while (CAN_OK != CAN.begin(MCP_STDEXT, CAN_100KBPS, MCP_CAN_SPI_SPEED)) {
         pc.println("CAN BUS init fail, retrying...");
         delay(100);
     }

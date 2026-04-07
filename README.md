@@ -85,18 +85,29 @@ Edit [config.h](config.h) to configure the project for your setup.
 
 ### Microcontroller
 
-Teensy++ 2.0 and 4.1 and Arduino Nano have been tested. Many other models should work as well with no or little adaptation.
+Tested models
+
+- Teensy++ 2.0
+- Teensy 4.1
+- Arduino Nano
+- Arduino Uno
+- SparkFun Pro Micro (clone)
+
+Many other models should work with little to no adaptation.
 
 ### Cluster
 
-The following Siemens VDO clusters have been tested to be fully working:
+The following Siemens VDO clusters have been tested to be working:
 
 | ZB NR | SW | HW |
 |-------|----|----|
 | 9166852-02 | 79.50.C1 | 0E |
 | 9130227-01 | 66.52.C0 | 0E |
+| 9148028-01* | 73.50.C2 | 0E |
 
-These are km/h models from cars __with automatic gearboxes__. It is handy because it can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently supported.
+\* mostly tested
+
+Supported models are from cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
 
 Other clusters might not work completely but could need some adaptation.
 
@@ -150,7 +161,7 @@ https://docs.longan-labs.cc/1030001/
 
 #### MCP2515 SPI adapter
 
-Enable `USE_MCP_CAN_SPI` in code. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+Enable `USE_MCP_CAN_SPI` in config. Set `MCP_CAN_SPI_SPEED` to either 8 or 16 MHz depending on your adapter. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 
 ## Software setup
 
@@ -172,9 +183,9 @@ The setup is a bit convoluted but currently it consists of the following parts:
     - It could be possible to get rid of this proxy and send e.g. BeamNG telemetry directly to the microcontroller if the microcontroller supports networking. This is considered in the future.
 - This repository is the microcontroller Arduino firmware that receives the telemetry from the proxy and sends it to the cluster over CAN bus
 
-#### The binary API
+#### The custom binary API
 
-The cluster is controlled over a virtual serial port using a compact **binary protocol**. The (virtual) baud rate is set to **921600**.
+The cluster is controlled over a virtual serial port using a compact binary protocol. The (potentially virtual) baud rate is set to 921600 by default. If your Arduino has a software USB-serial, drop `PC_SERIAL_BAUD` to 115200 on both Arduino and proxy side.
 
 ##### Frame Structure (Little Endian)
 

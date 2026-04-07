@@ -4,6 +4,11 @@
 // Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 //#define USE_MCP_CAN_SPI
 
+#ifndef MCP_CAN_SPI_SPEED
+    // Set to MCP_16MHZ if you have an adapter with 16MHz crystal
+    #define MCP_CAN_SPI_SPEED MCP_8MHZ
+#endif
+
 #ifndef MCP_CAN_SPI_CS_PIN
     #define MCP_CAN_SPI_CS_PIN 10
 #endif
