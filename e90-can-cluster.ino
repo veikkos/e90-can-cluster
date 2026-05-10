@@ -681,7 +681,9 @@ void queuePush(bool (*f)()) { if (!queueIsFull()) { canQueue[queueTail] = f; que
 bool (*queuePop())() { if (!queueIsEmpty()) { bool (*f)() = canQueue[queueHead]; queueHead = (queueHead + 1) % MaxQueueSize; return f; } return nullptr; }
 
 void setup() {
+#ifdef LED_BUILTIN
     pinMode(LED_BUILTIN, OUTPUT);
+#endif
     pinMode(REFUELING_LED_PIN, OUTPUT);
 
 #if defined(USE_SIMHUB)

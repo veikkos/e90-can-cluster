@@ -38,7 +38,9 @@ static inline uint32_t parse_u32(const uint8_t* p) {
 }
 
 void serialParse() {
-      digitalWrite(LED_BUILTIN, 0);
+#ifdef LED_BUILTIN
+    digitalWrite(LED_BUILTIN, 0);
+#endif
 
     if (!line_ready) return;
     line_ready = false;
@@ -191,5 +193,7 @@ void serialParse() {
         s_input.mode = (gearMode == 'S') ? SPORT : NORMAL;
     }
 
+#ifdef LED_BUILTIN
     digitalWrite(LED_BUILTIN, 1);
+#endif
 }
