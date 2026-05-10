@@ -142,7 +142,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 ### CAN adapter
 
-Two adapter types are supported.
+Three adapter types are supported.
 
 #### Serial CAN bus adapter
 
@@ -162,6 +162,12 @@ https://docs.longan-labs.cc/1030001/
 #### MCP2515 SPI adapter
 
 Enable `USE_MCP_CAN_SPI` in config. Set `MCP_CAN_SPI_SPEED` to either 8 or 16 MHz depending on your adapter. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+
+#### ESP32 built-in TWAI controller
+
+__Experimental, please report your results!__
+
+Enable `USE_ESP32_TWAI` in config. Uses the ESP32's built-in TWAI (CAN) controller. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the ESP32's TX/RX pins and the cluster's CAN H/L.
 
 ## Software setup
 

@@ -4,6 +4,7 @@
 #include "serial.h"
 #include "pc_printf.h"
 #include "ad5272_ambient.h"
+#include "can_adapter.h"
 
 /*
     See config.h for options!
@@ -13,16 +14,6 @@
     #include "serial_simhub.h"
 #else
     #include "serial_binary.h"
-#endif
-
-#if defined(USE_MCP_CAN_SPI)
-    #include <SPI.h>
-    #include <mcp_can.h>
-    MCP_CAN CAN(MCP_CAN_SPI_CS_PIN);
-#else
-    // Serial CAN BUS
-    // https://docs.longan-labs.cc/1030001/
-    #define canSerial Serial1
 #endif
 
 // Ambient temperature emulation with AD5272 digital potentiometer
@@ -35,20 +26,6 @@
 STimers s_timers;
 SRefueling s_refueling;
 SInput s_input;
-
-void sendCAN(uint32_t id, const uint8_t* data) {
-#if defined(USE_MCP_CAN_SPI)
-    CAN.sendMsgBuf(id, 0, 8, (byte*)data);
-#else
-    uint8_t buf[14] = {
-        (uint8_t)((id >> 24) & 0xFF), (uint8_t)((id >> 16) & 0xFF),
-        (uint8_t)((id >> 8) & 0xFF), (uint8_t)(id & 0xFF),
-        0x00, 0x00
-    };
-    memcpy(&buf[6], data, 8);
-    canSerial.write(buf, 14);
-#endif
-}
 
 bool canSendIgnitionFrame() {
     const uint32_t ID = 0x130;
@@ -66,7 +43,7 @@ bool canSendIgnitionFrame() {
     }
 
     uint8_t data[8] = {byte0, 0x42, 0x69, 0x8F, counter_on++, 0, 0, 0};
-    sendCAN(ID, data);
+    canSend(ID, data);
     return true;
 }
 
@@ -76,7 +53,7 @@ bool canSendRPM() {
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
                        0x80, 0x99};
-    sendCAN(ID, data);
+    canSend(ID, data);
     return true;
 }
 
@@ -110,7 +87,7 @@ bool canSendSpeed() {
         (uint8_t)(0xF0 | ((tick_counter >> 8) & 0x0F))
     };
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     last_speed_counter = current_speed_counter;
     last_tick_counter = tick_counter;
     return true;
@@ -127,7 +104,7 @@ bool canSendLights() {
     if (s_input.light_fog) lights |= L_FOG;
 
     frame[0] = lights;
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -142,7 +119,7 @@ bool canSendIndicator() {
         case I_OFF:
         default:        frame[0] = 0x80; break;
     }
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -150,7 +127,7 @@ bool canSendSteeringWheel() {
     const uint32_t ID = 0x0C4;
     static uint8_t frame[8] = {0x83, 0xFD, 0xFC, 0x00, 0x00, 0xFF, 0xF1, 0x00};
     frame[1] = 0; frame[2] = 0;
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -169,7 +146,7 @@ bool canSendAbs() {
     frame[6] = 0x00;
     frame[7] = counter++;
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -196,14 +173,14 @@ bool canSendEngineTempAndFuelInjection() {
     frame[4] = fuel_injection_total & 0xFF;
     frame[5] = (fuel_injection_total >> 8) & 0xFF;
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
 bool canSendAbsCounter() {
     const uint32_t ID = 0x0C0;
     static uint8_t frame[8] = {0xF0, 0xFF, 0, 0, 0, 0, 0, 0};
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     frame[0] = ((frame[0] + 1) | 0xF0);
     return true;
 }
@@ -211,7 +188,7 @@ bool canSendAbsCounter() {
 bool canSendAirbagCounter() {
     const uint32_t ID = 0x0D7;
     static uint8_t frame[8] = {0xC3, 0xFF, 0, 0, 0, 0, 0, 0};
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     frame[0]++;
     return true;
 }
@@ -249,7 +226,7 @@ bool canSendVehicleDynamics() {
     }
     frame[7] = checksum;
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -328,7 +305,7 @@ bool canSendFuel() {
     frame[2] = levelRight & 0xFF;
     frame[3] = (levelRight >> 8);
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -336,7 +313,7 @@ bool canSendHandbrake() {
     const uint32_t ID = 0x34F;
     static uint8_t frame[8] = {0xFE, 0xFF, 0, 0, 0, 0, 0, 0};
     frame[0] = s_input.handbrake ? 0xFE : 0xFD;
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -352,14 +329,14 @@ bool canSendTime() {
         (uint8_t)(s_input.time_year >> 8),
         0xF2
     };
-    sendCAN(ID, data);
+    canSend(ID, data);
     return true;
 }
 
 bool canSendDmeStatus() {
     const uint32_t ID = 0x12F;
     uint8_t frame[8] = {0x3F, 0x00, 0x00, 0x00, 0x00, 0x40, 0x01, 0x00};
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -375,7 +352,7 @@ void canSendErrorLight(uint16_t light_id, bool enable) {
         enable ? ON : OFF,
         0xFF, 0xFF, 0xFF, 0xFF
     };
-    sendCAN(ID, frame);
+    canSend(ID, frame);
 }
 
 bool canSuppressService() {
@@ -386,7 +363,7 @@ bool canSuppressService() {
 bool canSuppressSos() {
     const uint32_t ID = 0x0C1;
     uint8_t frame[8] = { (uint8_t)rand(), 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -455,7 +432,7 @@ bool canSendGearboxData() {
         byte0, byte1, 0xFF, byte3, byte4, 0xFF, 0xFF, 0xFF
     };
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -550,7 +527,7 @@ bool canSendOilLevel() {
     // +1l: 0xF2
     frame[1] = s_input.oil_warn ? 0xF2 : 0xF0;
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 
@@ -614,28 +591,19 @@ bool canSendCruiseControl() {
         0x00
     };
 
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 #else
 bool canSendCruiseControl() {
     const uint32_t ID = 0x200;
     uint8_t frame[8] = {0};
-    sendCAN(ID, frame);
+    canSend(ID, frame);
     return true;
 }
 #endif
 
 // CAN read
-#define FRAME_SIZE 14
-
-typedef void (*FrameHandler)(const uint8_t* frame);
-
-typedef struct {
-    uint32_t id;
-    FrameHandler handler;
-} CanHandlerEntry;
-
 void handle1B4(const uint8_t* data) {
     int16_t rawHigh = (int16_t)data[1] - 192;
     uint16_t rawLow = data[0];
@@ -701,50 +669,6 @@ static const CanHandlerEntry handler_table[] = {
 
 static const size_t handler_count = sizeof(handler_table) / sizeof(handler_table[0]);
 
-#if !defined(USE_MCP_CAN_SPI)
-static uint8_t buffer[FRAME_SIZE];
-
-static bool match_id(const uint8_t* buf, uint32_t id) {
-    return
-        buf[0] == ((id >> 24) & 0xFF) &&
-        buf[1] == ((id >> 16) & 0xFF) &&
-        buf[2] == ((id >> 8) & 0xFF) &&
-        buf[3] == (id & 0xFF);
-}
-#endif
-
-void readCAN(void) {
-#if defined(USE_MCP_CAN_SPI)
-    unsigned long id;
-    uint8_t len;
-    uint8_t buf[8];
-    while (CAN_MSGAVAIL == CAN.checkReceive()) {
-        CAN.readMsgBuf(&id, &len, buf);
-        for (size_t i = 0; i < handler_count; ++i) {
-            if (id == handler_table[i].id) {
-                handler_table[i].handler(buf);
-                break;
-            }
-        }
-    }
-#else
-    while (canSerial.available()) {
-        for (int i = 0; i < FRAME_SIZE - 1; ++i) {
-            buffer[i] = buffer[i + 1];
-        }
-        buffer[FRAME_SIZE - 1] = canSerial.read();
-
-        // check all handlers
-        for (size_t i = 0; i < handler_count; ++i) {
-            if (match_id(buffer, handler_table[i].id)) {
-                handler_table[i].handler(buffer + 4);
-                break;
-            }
-        }
-    }
-#endif
-}
-
 // CAN write queue
 const int MaxQueueSize = 64;
 bool (*canQueue[MaxQueueSize])();
@@ -766,24 +690,7 @@ void setup() {
     pc.begin(PC_SERIAL_BAUD);
 #endif
 
-#if defined(USE_MCP_CAN_SPI)
-    randomSeed(analogRead(A0));
-    while (CAN_OK != CAN.begin(MCP_STDEXT, CAN_100KBPS, MCP_CAN_SPI_SPEED)) {
-        pc.println("CAN BUS init fail, retrying...");
-        delay(100);
-    }
-    CAN.setMode(MCP_NORMAL);
-#else
-    canSerial.begin(CAN_SERIAL_BAUD);
-
-    #if defined(__AVR_AT90USB1286__)
-        // Pick the slightly slower baudrate as the higher more accurate one does not work
-        // with the CAN bus adapter
-        UCSR1A &= ~(1 << U2X1);
-        UBRR1 = 8;
-    #endif
-
-#endif
+    canBegin();
 
 #if defined(USE_AD5272_AMBIENT)
     if (!ambientTemp.begin()) {
@@ -935,5 +842,5 @@ void loop() {
     serialParse();
 #endif
 
-    readCAN();
+    canPoll(handler_table, handler_count);
 }

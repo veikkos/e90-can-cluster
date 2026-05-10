@@ -1,7 +1,10 @@
 #pragma once
 
-// CAN adapter: uncomment for MCP2515 SPI adapter, otherwise Serial CAN bus
-// Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
+// CAN adapter: pick one option below, or none for the Serial CAN bus default.
+// USE_MCP_CAN_SPI and USE_ESP32_TWAI are mutually exclusive.
+
+// MCP2515 SPI adapter. Install "mcp_can" library.
+// More at https://github.com/coryjfowler/MCP_CAN_lib
 //#define USE_MCP_CAN_SPI
 
 #ifndef MCP_CAN_SPI_SPEED
@@ -11,6 +14,18 @@
 
 #ifndef MCP_CAN_SPI_CS_PIN
     #define MCP_CAN_SPI_CS_PIN 10
+#endif
+
+// ESP32 built-in TWAI controller with an SN65HVD230 (or compatible) transceiver.
+// No external library required; uses the TWAI driver from the ESP32 Arduino core.
+//#define USE_ESP32_TWAI
+
+#ifndef TWAI_TX_PIN
+    #define TWAI_TX_PIN 23
+#endif
+
+#ifndef TWAI_RX_PIN
+    #define TWAI_RX_PIN 22
 #endif
 
 // Serial protocol: uncomment for SimHub, otherwise custom binary

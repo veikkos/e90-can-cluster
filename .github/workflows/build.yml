@@ -81,3 +81,28 @@ jobs:
       run: |
         arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328 \
           --build-property "compiler.cpp.extra_flags=-DUSE_MCP_CAN_SPI -DUSE_AD5272_AMBIENT" \
+          .
+
+  build-esp32-twai:
+    runs-on: ubuntu-latest
+    name: Build for ESP32 with built-in TWAI
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v1
+
+    - name: Install ESP32 platform
+      run: |
+        arduino-cli config init
+        arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+        arduino-cli core update-index
+        arduino-cli core install esp32:esp32
+
+    - name: Build for ESP32
+      run: |
+        arduino-cli compile --fqbn esp32:esp32:esp32 \
+          --build-property "compiler.cpp.extra_flags=-DUSE_ESP32_TWAI" \
+          .
