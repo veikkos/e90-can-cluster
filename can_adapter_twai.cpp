@@ -6,18 +6,24 @@
 #include <string.h>
 #include "driver/twai.h"
 #include "can_adapter.h"
+#include "serial.h"
 
 void canBegin() {
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(
         (gpio_num_t)TWAI_TX_PIN,
         (gpio_num_t)TWAI_RX_PIN,
-        TWAI_MODE_NORMAL
+        TWAI_MODE_NO_ACK
     );
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_100KBITS();
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-    twai_driver_install(&g_config, &t_config, &f_config);
-    twai_start();
+    while (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK
+           || twai_start() != ESP_OK) {
+        pc.println("CAN BUS init fail, retrying...");
+        twai_stop();
+        twai_driver_uninstall();
+        delay(100);
+    }
 }
 
 void canSend(uint32_t id, const uint8_t* data) {
