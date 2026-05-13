@@ -266,6 +266,7 @@ Bit  1 : DL_EXT_RED_TRIANGLE     (Generic warning, red)
 Bit  2 : DL_EXT_GEARBOX_ISSUE    (Gearbox issue)
 Bit  3 : DL_EXT_EXCLAMATION_MARK (Generic exclamation mark)
 Bit  4 : DL_EXT_ADBLUE_LOW       (AdBlue level low)
+Bit  5 : DL_EXT_CHECKERED_FLAG   (Checkered flag, launch control)
 ```
 
 ## Notes and findings

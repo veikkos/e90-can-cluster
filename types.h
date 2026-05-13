@@ -94,7 +94,8 @@ enum ErrorLightID : uint16_t {
     ALARM_LIGHT = 508,
     BRAKE_SYMBOL_RED = 308,
     ADBLUE_REFILL_RED = 640,
-    ADBLUE_REFILL_YELLOW = 643
+    ADBLUE_REFILL_YELLOW = 643,
+    CHECKERED_FLAG = 446
 };
 
 struct FuelLevelPoint {
@@ -162,6 +163,7 @@ struct SInput {
     bool gear_issue = false;
     bool exclamation_mark = false;
     bool adblue_low = false;
+    bool checkered_flag = false;
 
     struct {
         bool fl_deflated = false;
