@@ -490,6 +490,8 @@ DEFINE_CAN_SEND_SYMBOL(canSendGearIssue, s_input.gear_issue, GEARBOX_ISSUE_YELLO
 DEFINE_CAN_SEND_SYMBOL(canSendExclamationMark, s_input.exclamation_mark, EXCLAMATION_MARK_YELLOW, 25, 21)
 DEFINE_CAN_SEND_SYMBOL(canSendAdblueLow, s_input.adblue_low, ADBLUE_REFILL_YELLOW, 25, 22)
 DEFINE_CAN_SEND_SYMBOL(canSendCheckeredFlag, s_input.checkered_flag, CHECKERED_FLAG, 25, 23)
+DEFINE_CAN_SEND_SYMBOL(canSendLimitYellow, s_input.limit_yellow, LIMIT_YELLOW, 25, 24)
+DEFINE_CAN_SEND_SYMBOL(canSendLimitRed, s_input.limit_red, LIMIT_RED, 25, 25)
 
 // Interval = 50 ms
 DEFINE_CAN_SEND_SYMBOL(canSendTcSymbol, s_input.light_tc_active || s_input.light_tc_disabled, DTC_SYMBOL_ONLY, 100, 1)
@@ -806,6 +808,8 @@ void loop() {
             queuePush(canSendExclamationMark);
             queuePush(canSendAdblueLow);
             queuePush(canSendCheckeredFlag);
+            queuePush(canSendLimitYellow);
+            queuePush(canSendLimitRed);
         }
         // Send every 500 ms
         if (s_timers.canCounter % 50 == 5) {

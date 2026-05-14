@@ -164,6 +164,8 @@ struct SInput {
     bool exclamation_mark = false;
     bool adblue_low = false;
     bool checkered_flag = false;
+    bool limit_yellow = false;
+    bool limit_red = false;
 
     struct {
         bool fl_deflated = false;

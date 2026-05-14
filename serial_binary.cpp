@@ -152,6 +152,8 @@ void serialParse() {
     s_input.exclamation_mark = flagsExt & (1UL << 3);
     s_input.adblue_low       = flagsExt & (1UL << 4);
     s_input.checkered_flag   = flagsExt & (1UL << 5);
+    s_input.limit_yellow     = flagsExt & (1UL << 6);
+    s_input.limit_red        = flagsExt & (1UL << 7);
 
     s_input.fuel_injection   = parse_u16(&p[idx]); idx += 2;
     s_input.custom_light     = parse_u16(&p[idx]); idx += 2;
