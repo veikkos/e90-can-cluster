@@ -1,7 +1,7 @@
 #pragma once
 
 // CAN adapter: pick one option below, or none for the Serial CAN bus default.
-// USE_MCP_CAN_SPI and USE_ESP32_TWAI are mutually exclusive.
+// USE_MCP_CAN_SPI, USE_ESP32_TWAI and USE_FLEXCAN_T4 are mutually exclusive.
 
 // MCP2515 SPI adapter. Install "mcp_can" library.
 // More at https://github.com/coryjfowler/MCP_CAN_lib
@@ -26,6 +26,17 @@
 
 #ifndef TWAI_RX_PIN
     #define TWAI_RX_PIN 22
+#endif
+
+// Teensy 4.x built-in FlexCAN controller. Uses the FlexCAN_T4 library
+// bundled with Teensyduino. Requires an external CAN transceiver
+// (e.g. SN65HVD230) on the bus pins.
+//#define USE_FLEXCAN_T4
+
+#ifndef FLEXCAN_T4_BUS
+    // Pick CAN1 (TX=22, RX=23), CAN2 (TX=1, RX=0) or CAN3 (TX=31, RX=30)
+    // on Teensy 4.1. Teensy 4.0 exposes CAN1 and CAN3 only.
+    #define FLEXCAN_T4_BUS CAN1
 #endif
 
 // Serial protocol: uncomment for SimHub, otherwise custom binary

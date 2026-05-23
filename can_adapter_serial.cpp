@@ -1,6 +1,6 @@
 #include "config.h"
 
-#if !defined(USE_MCP_CAN_SPI) && !defined(USE_ESP32_TWAI)
+#if !defined(USE_MCP_CAN_SPI) && !defined(USE_ESP32_TWAI) && !defined(USE_FLEXCAN_T4)
 
 #include <Arduino.h>
 #include <string.h>

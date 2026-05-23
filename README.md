@@ -142,7 +142,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 ### CAN adapter
 
-Three adapter types are supported.
+Four adapter types are supported.
 
 #### Serial CAN bus adapter
 
@@ -168,6 +168,12 @@ Enable `USE_MCP_CAN_SPI` in config. Set `MCP_CAN_SPI_SPEED` to either 8 or 16 MH
 __Experimental, please report your results!__
 
 Enable `USE_ESP32_TWAI` in config. Uses the ESP32's built-in TWAI (CAN) controller. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the ESP32's TX/RX pins and the cluster's CAN H/L.
+
+#### Teensy 4.x built-in FlexCAN controller
+
+__Experimental, please report your results!__
+
+Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in FlexCAN controller via the [FlexCAN_T4](https://github.com/tonton81/FlexCAN_T4) library, which ships with Teensyduino. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the Teensy and the cluster's CAN H/L.
 
 ## Software setup
 

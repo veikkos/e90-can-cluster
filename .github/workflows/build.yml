@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-teensy:
+  build-teensy-serial:
     runs-on: ubuntu-latest
-    name: Build for Teensy 4.1
+    name: Build for Teensy 4.1 with Serial CAN bus adapter
 
     steps:
     - name: Checkout code
@@ -106,3 +106,31 @@ jobs:
         arduino-cli compile --fqbn esp32:esp32:esp32 \
           --build-property "compiler.cpp.extra_flags=-DUSE_ESP32_TWAI" \
           .
+
+  build-teensy-flexcan:
+    runs-on: ubuntu-latest
+    name: Build for Teensy 4.1 with built-in FlexCAN
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v1
+
+    - name: Install Teensy platform
+      run: |
+        arduino-cli config init
+        arduino-cli config add board_manager.additional_urls https://www.pjrc.com/teensy/package_teensy_index.json
+        arduino-cli core update-index
+        arduino-cli core install teensy:avr
+
+    - name: Enable FlexCAN adapter
+      # Teensy platform.txt doesn't honor compiler.cpp.extra_flags, so flip the define in source.
+      run: |
+        sed -i 's|^//#define USE_FLEXCAN_T4$|#define USE_FLEXCAN_T4|' config.h
+        grep -q '^#define USE_FLEXCAN_T4$' config.h
+
+    - name: Build for Teensy 4.1
+      run: |
+        arduino-cli compile --fqbn teensy:avr:teensy41 .
