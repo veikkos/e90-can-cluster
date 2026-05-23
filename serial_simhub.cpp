@@ -1,4 +1,9 @@
+#include "config.h"
+
+#if defined(USE_SIMHUB)
+
 #include <Arduino.h>
+#include "serial.h"
 
 #define VERSION 'j'
 #define DEVICE_NAME "E90 Cluster (veikkos)"
@@ -38,14 +43,14 @@
 SHCustomProtocol shCustomProtocol;
 #include "SHCommands.h"
 
-char loop_opt;
-unsigned long lastSerialActivity = 0;
+static char loop_opt;
+static unsigned long lastSerialActivity = 0;
 
-void simHubIdle(bool critical) {
+static void simHubIdle(bool critical) {
     shCustomProtocol.idle();
 }
 
-void simHubSetup()
+void serialBegin()
 {
 	FlowSerialBegin(19200);
 
@@ -53,7 +58,7 @@ void simHubSetup()
 	arqserial.setIdleFunction(simHubIdle);
 }
 
-void simHubSerialRead() {
+void serialPoll() {
 	shCustomProtocol.loop();
 
 	// Wait for data
@@ -104,3 +109,5 @@ void simHubSerialRead() {
 		Command_Shutdown();
 	}
 }
+
+#endif

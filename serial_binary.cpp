@@ -1,17 +1,24 @@
+#include "config.h"
+
+#if !defined(USE_SIMHUB)
+
 #include <Arduino.h>
 #include "types.h"
 #include "serial.h"
-#include "config.h"
 #include "pc_printf.h"
 
 extern SInput s_input;
 
 #define FRAME_LENGTH 35
-char rx_buf[FRAME_LENGTH];
-size_t rx_pos = 0;
-bool line_ready = false;
+static char rx_buf[FRAME_LENGTH];
+static size_t rx_pos = 0;
+static bool line_ready = false;
 
-void serialRead() {
+void serialBegin() {
+    pc.begin(PC_SERIAL_BAUD);
+}
+
+static void serialRead() {
     while (pc.available()) {
         char c = pc.read();
         if (rx_pos == 0 && c != 'S') {
@@ -37,7 +44,7 @@ static inline uint32_t parse_u32(const uint8_t* p) {
          | ((uint32_t)p[3] << 24);
 }
 
-void serialParse() {
+static void serialParse() {
 #ifdef LED_BUILTIN
     digitalWrite(LED_BUILTIN, 0);
 #endif
@@ -200,3 +207,10 @@ void serialParse() {
     digitalWrite(LED_BUILTIN, 1);
 #endif
 }
+
+void serialPoll() {
+    serialRead();
+    serialParse();
+}
+
+#endif

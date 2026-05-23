@@ -10,12 +10,6 @@
     See config.h for options!
 */
 
-#if defined(USE_SIMHUB)
-    #include "serial_simhub.h"
-#else
-    #include "serial_binary.h"
-#endif
-
 // Ambient temperature emulation with AD5272 digital potentiometer
 #if defined(USE_AD5272_AMBIENT)
     #include "ad5272_ambient.h"
@@ -689,11 +683,7 @@ void setup() {
 #endif
     pinMode(REFUELING_LED_PIN, OUTPUT);
 
-#if defined(USE_SIMHUB)
-    simHubSetup();
-#else
-    pc.begin(PC_SERIAL_BAUD);
-#endif
+    serialBegin();
 
     canBegin();
 
@@ -843,12 +833,7 @@ void loop() {
         }
     }
 
-#if defined(USE_SIMHUB)
-    simHubSerialRead();
-#else
-    serialRead();
-    serialParse();
-#endif
+    serialPoll();
 
     canPoll(handler_table, handler_count);
 }
