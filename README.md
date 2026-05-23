@@ -107,9 +107,9 @@ The following Siemens VDO clusters have been tested to be working:
 
 \* mostly tested
 
-Supported models are from cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
+Supported models are from Euro (km/h) cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
 
-Other clusters might not work completely but could need some adaptation.
+Other clusters might not work completely but could need some adaptation. Also mp/h needs some adaptation e.g. in the cruise control code.
 
 __NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not advisable to do this project on a cluster which you still plan to use in a car!_
 
@@ -144,7 +144,7 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 Four adapter types are supported.
 
-#### Serial CAN bus adapter
+#### Serial CAN bus adapter (default)
 
 https://docs.longan-labs.cc/1030001/
 
@@ -282,6 +282,7 @@ Bit  7 : DL_EXT_LIMIT_RED        (Speed limit, red)
 - There's a Discord community around hacking the clusters with lots of knowledge and information
     - [Arduino-Tacho Gang](https://discord.gg/UQFsS9D6kq)
 - Lights on the cluster (like Check Engine, DTC, Oil Pressure) can be controlled with CAN ID `0x592`. See `canSendErrorLight` and codes in [symbol document](./external/E92%20checkcontrol%20symbols.pdf)
+    - The IDs differ on some clusters and there are more symbols to explore than what the document shows
 - The code was originally implemented for _mbed LPC1768_. You can find the old code from the history with a tag `mbed_last`
 - Special credits for material or help to
     - beanseater420
