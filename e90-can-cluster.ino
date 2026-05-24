@@ -43,7 +43,7 @@ bool canSendIgnitionFrame() {
 
 bool canSendRPM() {
     const uint32_t ID = 0x0AA;
-    uint16_t rpm_val = min(s_input.rpm, (uint16_t)MAX_RPM) * 4;
+    uint16_t rpm_val = s_input.rpm * 4;
     uint8_t data[8] = {0x5F, 0x59, 0xFF, 0x00,
                        (uint8_t)(rpm_val & 0xFF), (uint8_t)(rpm_val >> 8),
                        0x80, 0x99};

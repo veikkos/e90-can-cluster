@@ -56,10 +56,6 @@
     #define NUMBER_OF_GEARS 7
 #endif
 
-#ifndef MAX_SPEED_KMH_X10
-    #define MAX_SPEED_KMH_X10 2800u  // 2800 = 280 km/h
-#endif
-
 #ifndef SPEED_CALIBRATION
     // 60 = reduces indicated speed by ~6% to compensate for the built-in speedometer
     // padding (law requires speedometers to never read below actual speed).
@@ -67,10 +63,6 @@
     // With 60: speedometer reads close to true speed, but odometer counts a bit slow.
     // Error can be fully removed by removing the built-in error by "coding".
     #define SPEED_CALIBRATION 60
-#endif
-
-#ifndef MAX_RPM
-    #define MAX_RPM 8000
 #endif
 
 // Comment away to hide "SPORT" from the sport gear mode

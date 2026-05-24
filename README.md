@@ -18,7 +18,6 @@ The code is able to control following things on the cluster
 
 - Speedometer
     - This needed to be "calibrated", see the config
-    - See `MAX_SPEED_KMH_X10` for setting the max speed range depending on the cluster
 - RPM
 - Indicators
 - Backlight
