@@ -141,6 +141,8 @@ The cluster needs 12V power supply. 12V wall adapter can be used, but you need t
 
 ### CAN adapter
 
+There should __NOT__ be 120 Ohm termination in the CAN bus adapter. It should be removed if it exists.
+
 Four adapter types are supported.
 
 #### Serial CAN bus adapter (default)
@@ -154,7 +156,6 @@ https://docs.longan-labs.cc/1030001/
     - Send `+++` to go to configuration mode
     - The CAN bus towards the cluster should be set to __100 kb/s__ with `AT+C=12`
     - The serial port speed between the microcontroller and the adapter should be set to __115200__ baud with `AT+S=4`. This is the highest speed possible and is needed to be able to send CAN messages fast enough
-- There should __NOT__ be 120 Ohm termination in the Serial CAN bus adapter. If it exists, it should be removed
 - __The Serial CAN bus adapter can be easily overwhelmed with commands. It seems to work much better having 3 ms between sending frames. See the main loop how this can be achieved without blocking__
 - The adapter is picky about the baud rate. Smallest error AT90USB has is +2.1% 115200 and it did not work. When changed to the second closest error -3.5% it started working
 
@@ -169,8 +170,6 @@ __Experimental, please report your results!__
 Enable `USE_ESP32_TWAI` in config. Uses the ESP32's built-in TWAI (CAN) controller. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the ESP32's TX/RX pins and the cluster's CAN H/L.
 
 #### Teensy 4.x built-in FlexCAN controller
-
-__Experimental, please report your results!__
 
 Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in FlexCAN controller via the [FlexCAN_T4](https://github.com/tonton81/FlexCAN_T4) library, which ships with Teensyduino. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the Teensy and the cluster's CAN H/L.
 
