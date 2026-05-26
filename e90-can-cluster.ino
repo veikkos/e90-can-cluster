@@ -528,19 +528,11 @@ bool canSendOilLevel() {
     return true;
 }
 
-inline uint8_t getCruiseTimer(uint16_t call_interval_ms = 100) {
+inline uint8_t getCruiseTimer() {
     static uint8_t timer = 0;
-    static uint16_t ms_accumulator = 0;
-
-    const uint16_t TIMER_INTERVAL_MS = 200;
     const uint8_t TIMER_STEP = 17;
 
-    ms_accumulator += call_interval_ms;
-    if (ms_accumulator >= TIMER_INTERVAL_MS) {
-        ms_accumulator = 0;
-        timer = (timer + TIMER_STEP) % 256;
-    }
-
+    timer = (timer + TIMER_STEP) % 256;
     return timer;
 }
 
@@ -578,7 +570,7 @@ bool canSendCruiseControl() {
     last_enabled = s_input.cruise.enabled;
 
     uint8_t frame[8] = {
-        getCruiseTimer(100),
+        getCruiseTimer(),
         kmh,
         cruise_status,
         byte3,
@@ -751,7 +743,6 @@ void loop() {
             queuePush(canSendGearboxData);
             queuePush(canSendSteeringWheel);
             queuePush(canSendDmeStatus);
-            queuePush(canSendCruiseControl);
             queuePush(canSendVehicleDynamics);
             queuePush(canSendSpeed);
         }
@@ -763,6 +754,7 @@ void loop() {
         }
         // Send every 200 ms (group 1)
         if (s_timers.canCounter % 20 == 7) {
+            queuePush(canSendCruiseControl);
             queuePush(canSendLights);
             queuePush(canSendIndicator);
             queuePush(canSendAbs);
