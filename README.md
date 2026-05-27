@@ -91,6 +91,7 @@ Tested models
 - Arduino Nano
 - Arduino Uno
 - SparkFun Pro Micro (clone)
+- ESP32 Dev Board
 
 Many other models should work with little to no adaptation.
 
@@ -164,8 +165,6 @@ https://docs.longan-labs.cc/1030001/
 Enable `USE_MCP_CAN_SPI` in config. Set `MCP_CAN_SPI_SPEED` to either 8 or 16 MHz depending on your adapter. Install "mcp_can" library. More at https://github.com/coryjfowler/MCP_CAN_lib
 
 #### ESP32 built-in TWAI controller
-
-__Experimental, please report your results!__
 
 Enable `USE_ESP32_TWAI` in config. Uses the ESP32's built-in TWAI (CAN) controller. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the ESP32's TX/RX pins and the cluster's CAN H/L.
 
