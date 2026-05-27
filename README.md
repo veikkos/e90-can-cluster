@@ -109,7 +109,7 @@ The following Siemens VDO clusters have been tested to be working:
 
 Supported models are from Euro (km/h) cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
 
-Other clusters might not work completely but could need some adaptation. Also mp/h needs some adaptation e.g. in the cruise control code.
+Other clusters might not work completely but could need some adaptation. Also mph needs some adaptation e.g. in the cruise control code.
 
 __NOTE:__ _The cluster will set a "tampering dot" to the bottom part of the screen when played around with. It's not advisable to do this project on a cluster which you still plan to use in a car!_
 
@@ -168,9 +168,9 @@ Enable `USE_MCP_CAN_SPI` in config. Set `MCP_CAN_SPI_SPEED` to either 8 or 16 MH
 
 Enable `USE_ESP32_TWAI` in config. Uses the ESP32's built-in TWAI (CAN) controller. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the ESP32's TX/RX pins and the cluster's CAN H/L.
 
-#### Teensy 4.x built-in FlexCAN controller
+#### Teensy 4.x built-in CAN controller
 
-Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in FlexCAN controller via the [FlexCAN_T4](https://github.com/tonton81/FlexCAN_T4) library, which ships with Teensyduino. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the Teensy and the cluster's CAN H/L.
+Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in CAN controller via the [FlexCAN_T4](https://github.com/tonton81/FlexCAN_T4) library, which ships with Teensyduino. You still need an external CAN transceiver (e.g. SN65HVD230) chip between the Teensy and the cluster's CAN H/L.
 
 ## Software setup
 
