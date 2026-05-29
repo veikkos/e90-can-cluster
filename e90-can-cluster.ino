@@ -388,6 +388,7 @@ bool canSendGearboxData() {
             case M5: byte1 = 0x90; break;
             case M6: byte1 = 0xA0; break;
             case M7: byte1 = 0xB0; break;
+            case M8: byte1 = 0xC0; break;
             default: byte1 = 0x00; break;
         }
     }
