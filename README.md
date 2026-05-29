@@ -17,7 +17,8 @@ _Cluster variant with oil temperature gauge_
 The code is able to control following things on the cluster
 
 - Speedometer
-    - This needed to be "calibrated", see the config
+    - Speed needs to be "calibrated" due to built-in error (unless programmed away)
+        - See `SPEED_CALIBRATION` in [config.h](config.h)
 - RPM
 - Indicators
 - Backlight
@@ -29,13 +30,13 @@ The code is able to control following things on the cluster
     - Range
 - Light symbols (high beams, fog lights front/back)
 - Fuel gauge
-    - Relatively well calibrated
+    - Relatively well calibrated out-of-the-box
     - Low fuel warning is automatic based on the level
     - See `REFUELING_LED_PIN` which can be used for a led indicating refueling
         - Refueling (change of fuel level) is done slowly as it seems to work most reliably that way
         - The level change works best if the ignition is turned off during refueling
 - Instant fuel consumption
-    - Gauge or display depending on the cluster
+    - Separate gauge or on the multi function display depending on the cluster
 - Handbrake
 - Gear selection (automatic gearbox cluster!)
     - See `NUMBER_OF_GEARS` and set it as high as the cluster allows before showing error code
@@ -44,6 +45,7 @@ The code is able to control following things on the cluster
     - "Sport" automatic mode (Sport D1, Sport D2...)
 - Cruise control
     - Also Adaptive Cruise Control with https://github.com/veikkos/driver_assistance_angelo234!
+    - Try `CAN_CRUISE_ALT` if you get cruise control error - for now it just suppresses the warning and cruise functionality is unavailable
 - Warnings ([see also](#notes-and-findings))
     - Check engine
     - Low oil pressure
@@ -84,7 +86,7 @@ Edit [config.h](config.h) to configure the project for your setup.
 
 ### Microcontroller
 
-Tested models
+Tested boards:
 
 - Teensy++ 2.0
 - Teensy 4.1
@@ -104,10 +106,13 @@ The following Siemens VDO clusters have been tested to be working:
 | 9166852-02 | 79.50.C1 | 0E |
 | 9130227-01 | 66.52.C0 | 0E |
 | 9148028-01* | 73.50.C2 | 0E |
+| 6980288-04** | 5C.50.80 | 0F |
 
 \* mostly tested
 
-Supported models are from Euro (km/h) cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
+\*\* mostly tested, requires `CAN_CRUISE_ALT`
+
+Fully tested models are from Euro (km/h) cars __with automatic gearboxes__. It is handy because those can show the gear selection (P, R, N, D) and manual mode (M1, M2...) as well as a "Sport" mode. Manual gear clusters are not currently fully supported (pull request welcome) but should still work.
 
 Other clusters might not work completely but could need some adaptation. Also mph needs some adaptation e.g. in the cruise control code.
 
@@ -148,6 +153,8 @@ Four adapter types are supported.
 
 #### Serial CAN bus adapter (default)
 
+_This adapter is not recommended for new builds. Pick any other supported adapter instead._
+
 https://docs.longan-labs.cc/1030001/
 
 - Serial CAN bus adapter has **persistent** memory for the baud rate and CAN bus speeds. You should only set them once
@@ -178,9 +185,9 @@ Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in CAN controll
 
 SimHub support is experimental and only been briefly tested in BeamNG and in ETS2. Enable `USE_SIMHUB` in config. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
 
-### Custom solution
+### Custom end-to-end solution
 
-The custom solution supports _advanced_ features.
+The custom end-to-end solution supports _advanced_ features.
 
 The setup is a bit convoluted but currently it consists of the following parts:
 - [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
@@ -292,3 +299,4 @@ Bit  7 : DL_EXT_LIMIT_RED        (Speed limit, red)
     - [SimHub](https://www.simhubdash.com/)
         - Code borrowed from SimHub `DisplayClientV2` have their respective licensing
     - telefon01
+    - EXCV31
