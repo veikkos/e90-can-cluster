@@ -126,6 +126,7 @@ bool canSendSteeringWheel() {
 }
 
 #if defined(ACTIVE_STEERING)
+// https://www.reddit.com/r/E90/comments/1kcojxw/e9x_afs_cluster_warning
 bool canSendActiveSteering() {
     const uint32_t ID = 0x1FB;
     static uint8_t frame[8] = {0x0F, 0x0F, 0, 0, 0, 0, 0, 0};
