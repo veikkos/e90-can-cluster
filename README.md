@@ -72,6 +72,8 @@ The code is able to control following things on the cluster
     - SOS call system
     - Steering wheel
     - Airbags
+    - Active Front Steering
+        - Enable `ACTIVE_STEERING` in [config.h](config.h) if you get a steering related error
 - Ambient temperature
     - This requires optional digital potentiometer, AD5272 is supported
       - You might want to set reasonable default resistance value (outside of this repo's scope)

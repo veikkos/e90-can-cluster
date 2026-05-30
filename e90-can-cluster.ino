@@ -125,6 +125,17 @@ bool canSendSteeringWheel() {
     return true;
 }
 
+#if defined(ACTIVE_STEERING)
+bool canSendActiveSteering() {
+    const uint32_t ID = 0x1FB;
+    static uint8_t frame[8] = {0x0F, 0x0F, 0, 0, 0, 0, 0, 0};
+    canSend(ID, frame);
+    frame[1] = (frame[1] + 0x10) & 0xF0;
+    frame[0] = (frame[0] + 1) & 0x0F;
+    return true;
+}
+#endif
+
 bool canSendAbs() {
     const uint32_t ID = 0x19E;
     static uint8_t counter = 0;
@@ -752,6 +763,9 @@ void loop() {
         if (s_timers.canCounter % 10 == 0) {
             queuePush(canSendIgnitionFrame);
             queuePush(canSendEngineTempAndFuelInjection);
+#if defined(ACTIVE_STEERING)
+            queuePush(canSendActiveSteering);
+#endif
             queuePush(canSendDmeStatus);
             queuePush(canSendVehicleDynamics);
             queuePush(canSendSpeed);

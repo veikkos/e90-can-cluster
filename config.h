@@ -77,6 +77,10 @@
 // Uncomment if you get cruise control warnings
 //#define CAN_CRUISE_ALT
 
+// Uncomment if the cluster has Active Front Steering (AFS) and you get a
+// steering wheel warning (CC-ID 73 "EPS Inoperative")
+//#define ACTIVE_STEERING
+
 // Hardware
 #ifndef REFUELING_LED_PIN
     #define REFUELING_LED_PIN 33
