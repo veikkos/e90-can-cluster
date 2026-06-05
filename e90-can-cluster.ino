@@ -306,9 +306,19 @@ bool canSendFuel() {
 bool canSendHandbrake() {
     const uint32_t ID = 0x34F;
     static uint8_t frame[8] = {0xFE, 0xFF, 0, 0, 0, 0, 0, 0};
-    frame[0] = s_input.handbrake ? 0xFE : 0xFD;
-    canSend(ID, frame);
-    return true;
+    static bool last_value = false;
+    static uint8_t counter = 0;
+    counter++;
+
+    // Emit on change or otherwise every ~5 s
+    if (s_input.handbrake != last_value || counter % 100 == 0) {
+        last_value = s_input.handbrake;
+        counter = 0;
+        frame[0] = s_input.handbrake ? 0xFE : 0xFD;
+        canSend(ID, frame);
+        return true;
+    }
+    return false;
 }
 
 bool canSendTime() {
@@ -751,6 +761,7 @@ void loop() {
         if (s_timers.canCounter % 5 == 1) {
             queuePush(canSendTcSymbol);
             queuePush(canSendEscSymbol);
+            queuePush(canSendHandbrake);
         }
         // Send every 200 ms (group 1)
         if (s_timers.canCounter % 20 == 7) {
@@ -761,7 +772,6 @@ void loop() {
             queuePush(canSendAbsCounter);
             queuePush(canSendAirbagCounter);
             queuePush(canSendFuel);
-            queuePush(canSendHandbrake);
             queuePush(canSendGearboxData);
             queuePush(canSendSteeringWheel);
         }
