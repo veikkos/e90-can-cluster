@@ -356,8 +356,9 @@ bool canSuppressService() {
 
 bool canSuppressSos() {
     const uint32_t ID = 0x0C1;
-    uint8_t frame[8] = { (uint8_t)rand(), 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    static uint8_t frame[8] = {0xF0, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     canSend(ID, frame);
+    frame[0] = ((frame[0] + 1) | 0xF0);
     return true;
 }
 
