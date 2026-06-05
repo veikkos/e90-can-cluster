@@ -741,15 +741,13 @@ void loop() {
         if (s_timers.canCounter % 10 == 0) {
             queuePush(canSendIgnitionFrame);
             queuePush(canSendEngineTempAndFuelInjection);
-            queuePush(canSendGearboxData);
-            queuePush(canSendSteeringWheel);
             queuePush(canSendDmeStatus);
             queuePush(canSendVehicleDynamics);
             queuePush(canSendSpeed);
+            queuePush(canSendRPM);
         }
         // Send every 50 ms
         if (s_timers.canCounter % 5 == 1) {
-            queuePush(canSendRPM);
             queuePush(canSendTcSymbol);
             queuePush(canSendEscSymbol);
         }
@@ -763,6 +761,8 @@ void loop() {
             queuePush(canSendAirbagCounter);
             queuePush(canSendFuel);
             queuePush(canSendHandbrake);
+            queuePush(canSendGearboxData);
+            queuePush(canSendSteeringWheel);
         }
         // Send every 200 ms (symbols)
         if (s_timers.canCounter % 20 == 13) {
@@ -796,7 +796,6 @@ void loop() {
         }
         // Send every 500 ms
         if (s_timers.canCounter % 50 == 5) {
-            queuePush(canSuppressSos);
             queuePush(canSuppressService);
         }
         // Send every 1 s
@@ -806,6 +805,10 @@ void loop() {
 #if defined(USE_AD5272_AMBIENT)
             updateAmbientTemperature();
 #endif
+        }
+        // Send every 5 s
+        if (s_timers.canCounter % 500 == 45) {
+            queuePush(canSuppressSos);
         }
         // Send every 10 s
         if (s_timers.canCounter % 1000 == 47) {
