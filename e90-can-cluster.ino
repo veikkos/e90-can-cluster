@@ -207,18 +207,18 @@ bool canSendVehicleDynamics() {
     uint8_t frame[8] = {0};
 
     frame[0] = v_veh_raw & 0xFF;
-    frame[1] = ((v_veh_raw >> 8) & 0x0F) | ((st_veh_dvco & 0x07) << 4);
+    frame[1] = ((v_veh_raw >> 8) & 0x0F) | ((st_veh_dvco & 0x07) << 4) | 0x80;
     frame[2] = acc_long_raw & 0xFF;
     frame[3] = ((acc_long_raw >> 8) & 0x0F) | ((acc_lat_raw & 0x0F) << 4);
     frame[4] = (acc_lat_raw >> 4) & 0xFF;
     frame[5] = yaw_rate_raw & 0xFF;
     frame[6] = ((yaw_rate_raw >> 8) & 0x0F) | ((alive_counter++ & 0x0F) << 4);
 
-    uint8_t checksum = 0x00;
+    uint16_t sum = 0xA1;
     for (int i = 0; i < 7; i++) {
-        checksum ^= frame[i];
+        sum += frame[i];
     }
-    frame[7] = checksum;
+    frame[7] = (uint8_t)((sum - 1) % 255 + 1);
 
     canSend(ID, frame);
     return true;
