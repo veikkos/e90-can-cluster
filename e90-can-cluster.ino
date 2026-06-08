@@ -90,6 +90,9 @@ bool canSendSpeed() {
 bool canSendLights() {
     const uint32_t ID = 0x21A;
     static uint8_t frame[8] = {0x00, 0x00, 0xF7, 0, 0, 0, 0, 0};
+    static uint8_t last_value = 0xFF;
+    static uint8_t counter = 0;
+    counter++;
 
     uint8_t lights = 0;
     if (s_input.light_lowbeam || s_input.light_highbeam) lights |= L_BACKLIGHT;
@@ -97,9 +100,15 @@ bool canSendLights() {
     if (s_input.light_highbeam) lights |= L_MAIN;
     if (s_input.light_fog) lights |= L_FOG;
 
-    frame[0] = lights;
-    canSend(ID, frame);
-    return true;
+    // Emit on change or otherwise every ~5 s
+    if (lights != last_value || counter % 100 == 0) {
+        last_value = lights;
+        counter = 0;
+        frame[0] = lights;
+        canSend(ID, frame);
+        return true;
+    }
+    return false;
 }
 
 bool canSendIndicator() {
@@ -761,11 +770,11 @@ void loop() {
             queuePush(canSendTcSymbol);
             queuePush(canSendEscSymbol);
             queuePush(canSendHandbrake);
+            queuePush(canSendLights);
         }
         // Send every 200 ms (group 1)
         if (s_timers.canCounter % 20 == 7) {
             queuePush(canSendCruiseControl);
-            queuePush(canSendLights);
             queuePush(canSendIndicator);
             queuePush(canSendAbs);
             queuePush(canSendAbsCounter);
