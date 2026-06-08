@@ -187,13 +187,11 @@ bool canSendAirbagCounter() {
     return true;
 }
 
-// This function is not fully verified but the presence of it makes the average speed and average fuel consumption work. See
 // https://github.com/HeinrichG-V12/E65_ReverseEngineering/blob/main/docs/0x1A0.md
 bool canSendVehicleDynamics() {
     const uint32_t ID = 0x1A0;
-    static uint8_t alive_counter = 0;
 
-    // Moving forward, backward not supported yet
+    // Moving forward, backward not supported yet but it doesn't seem to be important
     uint16_t v_veh_raw = (uint16_t)s_input.speed;
     uint8_t st_veh_dvco = s_input.speed >= 10 ? 1 : 0;
     float acc_long = 0.f;       // m/s²
@@ -212,13 +210,14 @@ bool canSendVehicleDynamics() {
     frame[3] = ((acc_long_raw >> 8) & 0x0F) | ((acc_lat_raw & 0x0F) << 4);
     frame[4] = (acc_lat_raw >> 4) & 0xFF;
     frame[5] = yaw_rate_raw & 0xFF;
-    frame[6] = ((yaw_rate_raw >> 8) & 0x0F) | ((alive_counter++ & 0x0F) << 4);
+    uint8_t aliv = ((millis() % 300) * 16 / 300) & 0x0F;
+    frame[6] = ((yaw_rate_raw >> 8) & 0x0F) | (aliv << 4);
 
-    uint16_t sum = 0xA1;
-    for (int i = 0; i < 7; i++) {
+    uint16_t sum = 0x00A0;
+    for (uint8_t i = 0; i < 7; i++) {
         sum += frame[i];
     }
-    frame[7] = (uint8_t)((sum - 1) % 255 + 1);
+    frame[7] = (uint8_t)(sum + (sum >> 8) + 0x01);
 
     canSend(ID, frame);
     return true;
