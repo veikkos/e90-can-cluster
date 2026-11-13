@@ -1,0 +1,25 @@
+format([DataCorePlugin.GameData.NewData.SpeedKmh],'0') + ';' +
+format([DataCorePlugin.GameData.NewData.Rpms],'0') + ';' +
+format([DataCorePlugin.GameData.NewData.OilTemperature],'0') + ';' +
+round([DataCorePlugin.GameData.NewData.FuelPercent] * 10, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.DashboardValues.GearDashboards], 0) < 0, 'R', if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.DashboardValues.GearDashboards], 0) == 0, 'N', format([DataCorePlugin.GameRawData.TruckValues.CurrentValues.DashboardValues.GearDashboards], '0'))) + ';' +
+format([DataCorePlugin.GameData.NewData.WaterTemperature],'0') + ';' +
+if([DataCorePlugin.GameData.NewData.EngineIgnitionOn], 2, 0) + ';' +
+if([DataCorePlugin.GameData.NewData.Rpms] > 100, 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.LightsValues.HazardWarningLights], false), 3, if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.LightsValues.BlinkerLeftActive], false), 1, if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.LightsValues.BlinkerRightActive], false), 2, 0))) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.MotorValues.BrakeValues.ParkingBrake], false), 1, 0) + ';' +
+'0;' +
+'0;' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.LightsValues.BeamLow], false), 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.LightsValues.BeamHigh], false), 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.DamageValues.Engine], 0) >= 0.07, 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.TruckValues.CurrentValues.DamageValues.Transmission], 0) >= 0.35, 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.NavigationValues.SpeedLimit.Kph], 0) > 0 && [DataCorePlugin.GameData.NewData.SpeedKmh] - [DataCorePlugin.GameRawData.NavigationValues.SpeedLimit.Kph] >= 1 && [DataCorePlugin.GameData.NewData.SpeedKmh] - [DataCorePlugin.GameRawData.NavigationValues.SpeedLimit.Kph] <= 5, 1, 0) + ';' +
+if(isnull([DataCorePlugin.GameRawData.NavigationValues.SpeedLimit.Kph], 0) > 0 && [DataCorePlugin.GameData.NewData.SpeedKmh] - [DataCorePlugin.GameRawData.NavigationValues.SpeedLimit.Kph] > 5, 1, 0) + ';' +
+round([DataCorePlugin.GameData.InstantConsumption_L100KM] * [DataCorePlugin.GameData.NewData.SpeedKmh] * 5 / 18, 0) + ';' +
+format([DataCorePlugin.CurrentDateTime], 'yyyy') + ';' +
+format([DataCorePlugin.CurrentDateTime], 'MM')   + ';' +
+format([DataCorePlugin.CurrentDateTime], 'dd')   + ';' +
+format([DataCorePlugin.CurrentDateTime], 'HH')   + ';' +
+format([DataCorePlugin.CurrentDateTime], 'mm')   + ';' +
+format([DataCorePlugin.CurrentDateTime], 'ss')   + '\n'

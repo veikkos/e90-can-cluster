@@ -183,7 +183,10 @@ Enable `USE_FLEXCAN_T4` in config. Uses the Teensy 4.0/4.1 built-in CAN controll
 
 ### SimHub
 
-SimHub support is experimental and only been briefly tested in BeamNG and in ETS2. Enable `USE_SIMHUB` in config. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from `simhub/custom_protocol.txt`.
+SimHub support is experimental and only been briefly tested in BeamNG and in ETS2. Enable `USE_SIMHUB` in config. Connect as an Arduino device in "Multiple Arduinos" mode and use "Custom protocol" from:
+
+- `simhub/custom_protocol.txt`: BeamNG/Generic
+- `simhub/custom_protocol_ets2.txt`: ETS2 / ATS with more lights and warnings
 
 ### Custom end-to-end solution
 
@@ -300,3 +303,5 @@ Bit  7 : DL_EXT_LIMIT_RED        (Speed limit, red)
         - Code borrowed from SimHub `DisplayClientV2` have their respective licensing
     - telefon01
     - EXCV31
+    - @DanielOnuchowski
+        - ETS2 SimHub protocol
