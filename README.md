@@ -224,16 +224,16 @@ The cluster is controlled over a virtual serial port using a compact binary prot
 | 13     | 1    | `oil temp`          | °C                                   |
 | 14     | 2    | `fuel`              | 0–1000 (% × 10)                      |
 | 16     | 4    | `showlights`        | Bitfield of all light states (see tables below) |
-| 17     | 4    | `showlights ext`    | Bitfield of all light states (see tables below) |
+| 20     | 1    | `showlights ext`    | Bitfield of extended light states (see tables below) |
 | 21     | 2    | `fuel injection`    | microliters per 100 ms               |
 | 23     | 2    | `custom light`      | Symbol ID (0–65535)                  |
 | 25     | 1    | `custom light on`   | 1 = show, 0 = off                    |
 | 26     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
 | 27     | 2    | `cruise speed`      | km/h                                 |
 | 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Vehicle ahead, Bit 2: Collision warning, Bits 3-5: Adaptive cruise following distance (1-4) |
-| 20     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
+| 30     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 31     | 1    | `engine running`    | 1 = on, 0 = off                      |
-| 32     | 2    | `ambient temp`      | °C × 10 (e.g. 215 = 21.5°C)          |
+| 32     | 2    | `ambient temp`      | Signed, °C × 10 (e.g. 215 = 21.5°C, -50 = -5.0°C) |
 | 34     | 1    | `checksum`          | Additive checksum of all previous bytes excluding start marker |
 
 ##### `showlights` Breakdown
