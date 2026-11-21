@@ -230,7 +230,7 @@ The cluster is controlled over a virtual serial port using a compact binary prot
 | 25     | 1    | `custom light on`   | 1 = show, 0 = off                    |
 | 26     | 1    | `gear extension`    | ASCII char: M = semi-automatic, S = sport mode, P = park, A = automatic, N = none |
 | 27     | 2    | `cruise speed`      | km/h                                 |
-| 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Vehicle ahead, Bit 2: Collision warning, Bits 3-5: Adaptive cruise following distance (1-4) |
+| 29     | 1    | `cruise status`     | Bit 0: Active (1=on, 0=off), Bit 1: Vehicle ahead, Bit 2: Collision warning, Bits 3-5: Adaptive cruise following distance (1-4), Bit 6: Coasting (F02), Bit 7: BC button pressed (F02) |
 | 30     | 1    | `ignition`          | 3 = starter, 2 = on, 1 = accessory only, 0 = off |
 | 31     | 1    | `engine running`    | 1 = on, 0 = off                      |
 | 32     | 2    | `ambient temp`      | Signed, °C × 10 (e.g. 215 = 21.5°C, -50 = -5.0°C) |
@@ -242,9 +242,11 @@ The cluster is controlled over a virtual serial port using a compact binary prot
 Bit  0 : DL_SHIFT         (Shift light) UNUSED
 Bit  1 : DL_FULLBEAM      (Full beam headlights)
 Bit  2 : DL_HANDBRAKE     (Handbrake engaged)
+Bit  3 : DL_DRIVEMODE_LO  (Drive mode, low bit) (F02)
 Bit  4 : DL_TC            (Traction control active)
 Bit  5 : DL_SIGNAL_L      (Left turn signal)
 Bit  6 : DL_SIGNAL_R      (Right turn signal)
+Bit  7 : DL_DRIVEMODE_HI  (Drive mode, high bit) (F02)
 Bit  8 : DL_OILWARN       (Oil pressure warning)
 Bit  9 : DL_BATTERY       (Battery warning) UNUSED
 Bit 10 : DL_ABS           (ABS active/disabled) UNUSED
@@ -270,6 +272,8 @@ Bit 29 : DL_TAILGATEOPEN  (Tailgate open)
 Bit 30 : DL_TC_DISABLED   (Traction control disabled)
 Bit 31 : DL_ESC_DISABLED  (ESC disabled)
 ```
+
+Drive mode (F02): 0 = unknown, 1 = comfort, 2 = sport, 3 = sport+
 
 ##### `showlights ext` Breakdown
 
