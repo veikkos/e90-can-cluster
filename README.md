@@ -195,7 +195,7 @@ The custom end-to-end solution supports _advanced_ features.
 The setup is a bit convoluted but currently it consists of the following parts:
 - [BMW e90 CAN bus BeamNG protocol](https://github.com/veikkos/e90-can-cluster-beamng-protocol)
     - This BeamNG plugin provides the game telemetry via a UDP socket
-- [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/outgauge-proxy)
+- [BMW e90 CAN bus cluster proxy](https://github.com/veikkos/e90-can-cluster-proxy)
     - This is the "SimHub" equivalent of this setup
     - The Node.js proxy receives the telemetry and sends it to the microcontroller over a (virtual USB) serial port
     - The proxy supports **BeamNG**, **Euro Truck Simulator 2** and **American Truck Simulator**
@@ -204,7 +204,7 @@ The setup is a bit convoluted but currently it consists of the following parts:
 
 #### The custom binary API
 
-The firmware and the proxy talk over a (virtual USB) serial port using a compact binary protocol, documented in the [proxy repository](https://github.com/veikkos/outgauge-proxy#binary-serial-protocol). The baud rate is 921600 by default. If your Arduino has a software USB-serial, drop `PC_SERIAL_BAUD` to 115200 on both Arduino and proxy side.
+The firmware and the proxy talk over a (virtual USB) serial port using a compact binary protocol, documented in the [proxy repository](https://github.com/veikkos/e90-can-cluster-proxy#binary-serial-protocol). The baud rate is 921600 by default. If your Arduino has a software USB-serial, drop `PC_SERIAL_BAUD` to 115200 on both Arduino and proxy side.
 
 ## Notes and findings
 
