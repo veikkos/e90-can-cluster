@@ -65,7 +65,8 @@
     #define SPEED_CALIBRATION 60
 #endif
 
-// Comment away to hide "SPORT" from the sport gear mode
+// Comment away to never show "SPORT". It shows in the sport and sport+ drive
+// modes, or in the sport gear mode if the game does not send a drive mode.
 #define GEAR_SPORT_TEXT
 
 // Enable to show "S1", "S2" instead of "D1", "D2" in sport gear mode

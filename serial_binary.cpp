@@ -98,6 +98,8 @@ static void serialParse() {
     s_input.handbrake        = flags & (1UL << 2);
     s_input.light_tc_active  = flags & (1UL << 4);
 
+    s_input.drive_mode = (DRIVE_MODE)(((flags >> 3) & 0x01) | (((flags >> 7) & 0x01) << 1));
+
     bool left_signal  = flags & (1UL << 5);
     bool right_signal = flags & (1UL << 6);
 

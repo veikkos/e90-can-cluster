@@ -420,12 +420,16 @@ bool canSendGearboxData() {
         byte3 = (counter_high << 4) | 0x0C; // 0x0C to 0xFC
         counter_high = (counter_high + 1) % 16;
     } else {
-        uint8_t sport =
  #if defined(GEAR_SPORT_TEXT)
-            // 0x07 shows text "SPORT" on the cluster in sport mode
-            s_input.mode == NORMAL ? 0x0D : 0x07;
+        // "SPORT" follows the drive mode (sport and sport+). If the game does
+        // not send a drive mode, it follows the sport gear mode.
+        bool sport_text = s_input.drive_mode != DM_UNKNOWN
+            ? (s_input.drive_mode == DM_SPORT || s_input.drive_mode == DM_SPORT_PLUS)
+            : s_input.mode == SPORT;
+        // 0x07 shows text "SPORT" on the cluster
+        uint8_t sport = sport_text ? 0x07 : 0x0D;
  #else
-            0x0D;
+        uint8_t sport = 0x0D;
  #endif
 
         byte3 = (counter_high << 4) | sport;
